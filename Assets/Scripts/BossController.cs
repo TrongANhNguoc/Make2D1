@@ -75,8 +75,7 @@ public class BossController : MonoBehaviour
 
             if (player != null)
             {
-                Projectile p = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
-                p.Launch(player.position - transform.position);
+                Projectile.Spawn(projectilePrefab, transform.position, player.position - transform.position);
             }
 
             yield return new WaitForSeconds(aimedShotDelay);
@@ -93,8 +92,7 @@ public class BossController : MonoBehaviour
             float viewportX = Random.Range(0.05f, 0.95f);
             float worldX = cam.ViewportToWorldPoint(new Vector3(viewportX, 0.5f, -cam.transform.position.z)).x;
 
-            Projectile p = Instantiate(projectilePrefab, new Vector3(worldX, topY, 0f), Quaternion.identity);
-            p.Launch(Vector2.down);
+            Projectile.Spawn(projectilePrefab, new Vector3(worldX, topY, 0f), Vector2.down);
         }
     }
 }

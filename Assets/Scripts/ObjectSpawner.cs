@@ -20,6 +20,7 @@ public class ObjectSpawner : MonoBehaviour
     [SerializeField] private float spawnIntervalY = 5f;
     [SerializeField] private float minX = -4f;
     [SerializeField] private float maxX = 4f;
+    [Tooltip("Layer cản spawn. Layer Ground và Wall luôn được tính thêm, kể cả khi để trống")]
     [SerializeField] private LayerMask groundLayer;
 
     [Tooltip("Ngừng spawn cách Portal bao nhiêu unit để đỉnh ải thoáng")]
@@ -35,6 +36,9 @@ public class ObjectSpawner : MonoBehaviour
     private bool movingTraps;
     private bool warnedMissingTrap;
     private readonly List<GameObject> spawned = new List<GameObject>();
+
+    // groundLayer trong scene từng để trống nên mọi kiểm tra va chạm đều không trúng gì → luôn gộp thêm Ground + Wall
+    private int ObstacleMask => groundLayer.value | LayerMask.GetMask("Ground", "Wall");
 
     private void Start()
     {
@@ -119,29 +123,6 @@ public class ObjectSpawner : MonoBehaviour
 
     private void SpawnRandomObject(float spawnY)
     {
-        Vector3 validSpawnPos = Vector3.zero;
-        bool foundValidPosition = false;
-
-        for (int i = 0; i < 10; i++)
-        {
-            float randomX = Random.Range(minX, maxX);
-            Vector3 checkPos = new Vector3(randomX, spawnY, 0f);
-
-            Collider2D hitGround = Physics2D.OverlapCircle(checkPos, 0.25f, groundLayer);
-
-            if (hitGround == null)
-            {
-                validSpawnPos = checkPos;
-                foundValidPosition = true;
-                break;
-            }
-        }
-
-        if (!foundValidPosition)
-        {
-            validSpawnPos = new Vector3(0f, spawnY, 0f);
-        }
-
         // Tỉ lệ coin / quái / bẫy lấy từ LevelConfig của ải hiện tại
         int coinRate = coinSpawnChance;
         int enemyRate = airEnemySpawnChance + groundEnemySpawnChance;
@@ -159,24 +140,100 @@ public class ObjectSpawner : MonoBehaviour
         if (totalChance <= 0) return;
 
         int randomRoll = Random.Range(0, totalChance);
+        bool isEnemy = randomRoll >= coinRate && randomRoll < coinRate + enemyRate;
 
-        if (randomRoll < coinRate)
-        {
-            SqawnCoin(validSpawnPos);
-        }
-        else if (randomRoll < coinRate + enemyRate)
+        if (isEnemy)
         {
             // Chia quái bay / quái đất theo tỉ lệ 2 trường serialized
             int enemySplit = airEnemySpawnChance + groundEnemySpawnChance;
             bool spawnAir = enemySplit <= 0 ? Random.value < 0.5f : Random.Range(0, enemySplit) < airEnemySpawnChance;
 
-            if (spawnAir) SpawnAirEnemy(validSpawnPos);
-            else SpawnGroundEnemy(validSpawnPos);
+            // Quái đất tự tìm mặt nền để đứng, không dùng điểm trống giữa không trung
+            if (!spawnAir)
+            {
+                SpawnGroundEnemy(spawnY);
+                return;
+            }
         }
-        else
+
+        // Không tìm được chỗ trống thì bỏ lượt này (không ép spawn ở x = 0 như trước, dễ dính tường)
+        if (!TryFindFreePosition(spawnY, out Vector3 validSpawnPos)) return;
+
+        if (randomRoll < coinRate) SqawnCoin(validSpawnPos);
+        else if (isEnemy) SpawnAirEnemy(validSpawnPos);
+        else SpawnTrap(validSpawnPos);
+    }
+
+    private bool TryFindFreePosition(float spawnY, out Vector3 pos)
+    {
+        for (int i = 0; i < 10; i++)
         {
-            SpawnTrap(validSpawnPos);
+            Vector3 checkPos = new Vector3(Random.Range(minX, maxX), spawnY, 0f);
+            if (Physics2D.OverlapCircle(checkPos, 0.5f, ObstacleMask) == null)
+            {
+                pos = checkPos;
+                return true;
+            }
         }
+
+        pos = Vector3.zero;
+        return false;
+    }
+
+    // Hộp collider của prefab (đã nhân scale) và độ lệch tâm so với pivot; không có collider thì 1x1
+    private static void GetColliderBox(GameObject prefab, out Vector2 offset, out Vector2 size)
+    {
+        Vector2 scale = new Vector2(Mathf.Abs(prefab.transform.localScale.x), Mathf.Abs(prefab.transform.localScale.y));
+        offset = Vector2.zero;
+        size = Vector2.one;
+
+        BoxCollider2D box = prefab.GetComponent<BoxCollider2D>();
+        if (box != null)
+        {
+            offset = Vector2.Scale(box.offset, scale);
+            size = Vector2.Scale(box.size, scale);
+            return;
+        }
+
+        CircleCollider2D circle = prefab.GetComponent<CircleCollider2D>();
+        if (circle != null)
+        {
+            offset = Vector2.Scale(circle.offset, scale);
+            size = Vector2.one * (circle.radius * 2f * Mathf.Max(scale.x, scale.y));
+            return;
+        }
+
+        CapsuleCollider2D capsule = prefab.GetComponent<CapsuleCollider2D>();
+        if (capsule != null)
+        {
+            offset = Vector2.Scale(capsule.offset, scale);
+            size = Vector2.Scale(capsule.size, scale);
+        }
+    }
+
+    // Tìm vị trí lơ lửng đủ khoảng trống so với đất phía trên/dưới, rồi kiểm tra hộp collider thật không chạm ground/wall
+    private bool TryGetAirPosition(Vector3 spawnPosition, GameObject prefab, out Vector3 finalPos)
+    {
+        finalPos = spawnPosition;
+        float airClearance = 4.5f;
+
+        RaycastHit2D hitUnder = Physics2D.Raycast(spawnPosition, Vector2.down, 5.0f, ObstacleMask);
+        RaycastHit2D hitAbove = Physics2D.Raycast(spawnPosition, Vector2.up, 5.0f, ObstacleMask);
+
+        float minY = float.MinValue;
+        float maxY = float.MaxValue;
+
+        if (hitUnder.collider != null) minY = hitUnder.point.y + airClearance;
+        if (hitAbove.collider != null) maxY = hitAbove.point.y - airClearance;
+
+        if (maxY <= minY) return false;
+
+        finalPos.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
+
+        // Tính cả offset của collider và chút đệm để không sát tường
+        GetColliderBox(prefab, out Vector2 offset, out Vector2 size);
+        Vector2 center = (Vector2)finalPos + offset;
+        return Physics2D.OverlapBox(center, size + Vector2.one * 0.2f, 0f, ObstacleMask) == null;
     }
 
     private void SpawnTrap(Vector3 spawnPosition)
@@ -191,14 +248,7 @@ public class ObjectSpawner : MonoBehaviour
             return;
         }
 
-        Vector2 boxSize = Vector2.one;
-        BoxCollider2D boxCol = trapPrefab.GetComponent<BoxCollider2D>();
-        if (boxCol != null)
-        {
-            boxSize = boxCol.size * trapPrefab.transform.localScale;
-        }
-
-        if (!TryGetAirPosition(spawnPosition, boxSize, out Vector3 finalPos)) return;
+        if (!TryGetAirPosition(spawnPosition, trapPrefab, out Vector3 finalPos)) return;
 
         GameObject trap = Instantiate(trapPrefab, finalPos, Quaternion.identity);
         Track(trap);
@@ -207,97 +257,50 @@ public class ObjectSpawner : MonoBehaviour
         if (trapScript != null) trapScript.SetMoving(movingTraps);
     }
 
-    // Tìm vị trí lơ lửng đủ khoảng trống so với đất phía trên/dưới
-    private bool TryGetAirPosition(Vector3 spawnPosition, Vector2 boxSize, out Vector3 finalPos)
-    {
-        finalPos = spawnPosition;
-        float airClearance = 4.5f;
-
-        RaycastHit2D hitUnder = Physics2D.Raycast(spawnPosition, Vector2.down, 5.0f, groundLayer);
-        RaycastHit2D hitAbove = Physics2D.Raycast(spawnPosition, Vector2.up, 5.0f, groundLayer);
-
-        float minY = float.MinValue;
-        float maxY = float.MaxValue;
-
-        if (hitUnder.collider != null) minY = hitUnder.point.y + airClearance;
-        if (hitAbove.collider != null) maxY = hitAbove.point.y - airClearance;
-
-        if (maxY <= minY) return false;
-
-        finalPos.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
-
-        return Physics2D.OverlapBox(finalPos, boxSize * 0.9f, 0f, groundLayer) == null;
-    }
-
-
     private void SpawnAirEnemy(Vector3 spawnPosition)
     {
         if (airEnemyPrefab == null) return;
+        if (!TryGetAirPosition(spawnPosition, airEnemyPrefab, out Vector3 finalPos)) return;
 
-        Vector3 finalAirPos = spawnPosition;
-        float airClearance = 4.5f; 
-
-        RaycastHit2D hitUnder = Physics2D.Raycast(spawnPosition, Vector2.down, 5.0f, groundLayer);
-
-        RaycastHit2D hitAbove = Physics2D.Raycast(spawnPosition, Vector2.up, 5.0f, groundLayer);
-
-        float minY = float.MinValue;
-        float maxY = float.MaxValue;
-
-        if (hitUnder.collider != null)
-        {
-            minY = hitUnder.point.y + airClearance;
-        }
-
-        if (hitAbove.collider != null)
-        {
-            maxY = hitAbove.point.y - airClearance;
-        }
-
-        if (maxY <= minY) return;
-
-        finalAirPos.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
-
-        Vector2 boxSize = Vector2.one;
-        BoxCollider2D boxCol = airEnemyPrefab.GetComponent<BoxCollider2D>();
-        if (boxCol != null)
-        {
-            boxSize = boxCol.size * airEnemyPrefab.transform.localScale;
-        }
-
-        Collider2D hitCheck = Physics2D.OverlapBox(finalAirPos, boxSize * 0.9f, 0f, groundLayer);
-
-        if (hitCheck == null)
-        {
-            Track(Instantiate(airEnemyPrefab, finalAirPos, Quaternion.identity));
-        }
+        Track(Instantiate(airEnemyPrefab, finalPos, Quaternion.identity));
     }
-    private void SpawnGroundEnemy(Vector3 spawnPosition)
+
+    // Quái đất: thử vài X ngẫu nhiên, bắn tia xuống tìm mặt nền nằm ngang rồi đặt đáy collider lên mặt nền
+    private void SpawnGroundEnemy(float spawnY)
     {
         if (groundEnemyPrefab == null) return;
 
-        RaycastHit2D hit = Physics2D.Raycast(spawnPosition, Vector2.down, 4.0f, groundLayer);
+        GetColliderBox(groundEnemyPrefab, out Vector2 offset, out Vector2 size);
+        float bottomOffset = offset.y - size.y * 0.5f;
+        float halfWidth = size.x * 0.5f;
 
-        if (hit.collider != null && hit.normal.y > 0.7f)
+        for (int i = 0; i < 12; i++)
         {
-            float enemyHeight = 1.0f;
-            BoxCollider2D boxCol = groundEnemyPrefab.GetComponent<BoxCollider2D>();
-            if (boxCol != null)
-            {
-                enemyHeight = (boxCol.size.y * groundEnemyPrefab.transform.localScale.y) / 2f;
-            }
+            Vector2 origin = new Vector2(Random.Range(minX, maxX), spawnY);
 
-            Vector3 groundSpawnPos = new Vector3(spawnPosition.x, hit.point.y + enemyHeight, 0f);
+            // Điểm xuất phát nằm trong tường/nền thì tia không trúng chính nó → bỏ qua
+            if (Physics2D.OverlapPoint(origin, ObstacleMask) != null) continue;
 
-            Vector2 boxSize = boxCol != null ? boxCol.size * groundEnemyPrefab.transform.localScale : new Vector2(1f, 1f);
-            Collider2D hitWall = Physics2D.OverlapBox(groundSpawnPos, boxSize * 0.9f, 0f, groundLayer);
+            RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 8.0f, ObstacleMask);
+            if (hit.collider == null || hit.normal.y <= 0.7f) continue;
 
-            if (hitWall == null)
-            {
-                Track(Instantiate(groundEnemyPrefab, groundSpawnPos, Quaternion.identity));
-            }
+            // Cả hai mép dưới của quái đều phải có nền, tránh đứng chênh vênh ngoài mép
+            float probeY = hit.point.y + 0.1f;
+            bool leftSupported = Physics2D.Raycast(new Vector2(origin.x - halfWidth * 0.9f, probeY), Vector2.down, 0.3f, ObstacleMask).collider != null;
+            bool rightSupported = Physics2D.Raycast(new Vector2(origin.x + halfWidth * 0.9f, probeY), Vector2.down, 0.3f, ObstacleMask).collider != null;
+            if (!leftSupported || !rightSupported) continue;
+
+            Vector3 pos = new Vector3(origin.x, hit.point.y - bottomOffset + 0.02f, 0f);
+
+            // Hộp thu nhỏ và nâng nhẹ để không tính chạm chính mặt nền bên dưới
+            Vector2 center = (Vector2)pos + offset + Vector2.up * 0.05f;
+            if (Physics2D.OverlapBox(center, size * 0.85f, 0f, ObstacleMask) != null) continue;
+
+            Track(Instantiate(groundEnemyPrefab, pos, Quaternion.identity));
+            return;
         }
     }
+
     // Chọn prefab quả: ưu tiên loại đang cần của Fruit Challenge, không thì random trong fruitPrefabs
     private GameObject PickFruitPrefab()
     {
@@ -320,44 +323,10 @@ public class ObjectSpawner : MonoBehaviour
 
     private void SqawnCoin(Vector3 spawnPosition)
     {
-        GameObject coinPrefab = PickFruitPrefab();
-        if (coinPrefab == null) return;
+        GameObject fruit = PickFruitPrefab();
+        if (fruit == null) return;
+        if (!TryGetAirPosition(spawnPosition, fruit, out Vector3 finalCoinPos)) return;
 
-        Vector3 finalCoinPos = spawnPosition;
-        float clearance = 4.5f;
-
-        RaycastHit2D hitUnder = Physics2D.Raycast(spawnPosition, Vector2.down, 5.0f, groundLayer);
-        RaycastHit2D hitAbove = Physics2D.Raycast(spawnPosition, Vector2.up, 5.0f, groundLayer);
-
-        float minY = float.MinValue;
-        float maxY = float.MaxValue;
-
-        if (hitUnder.collider != null)
-        {
-            minY = hitUnder.point.y + clearance;
-        }
-
-        if (hitAbove.collider != null)
-        {
-            maxY = hitAbove.point.y - clearance;
-        }
-
-        if (maxY <= minY) return;
-
-        finalCoinPos.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
-
-        float coinRadius = 0.5f;
-        CircleCollider2D circleCol = coinPrefab.GetComponent<CircleCollider2D>();
-        if (circleCol != null)
-        {
-            coinRadius = circleCol.radius * Mathf.Max(coinPrefab.transform.localScale.x, coinPrefab.transform.localScale.y);
-        }
-
-        Collider2D hitCheck = Physics2D.OverlapCircle(finalCoinPos, coinRadius * 0.9f, groundLayer);
-
-        if (hitCheck == null)
-        {
-            Track(Instantiate(coinPrefab, finalCoinPos, Quaternion.identity));
-        }
+        Track(Instantiate(fruit, finalCoinPos, Quaternion.identity));
     }
 }

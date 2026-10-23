@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36d38090a119af846a1ddebfcbddf476, type: 3}
   m_Name: Stage4_Boss
   m_EditorClassIdentifier: 
-  stageIndex: 1
-  stageType: 0
-  targetHeight: 150
+  stageIndex: 4
+  stageType: 3
+  targetHeight: 300
   timeLimit: 0
   bossPrefab: {fileID: 2712320054122736632, guid: 24b0aec423b901948b2c5be3f80be38a, type: 3}
   fruitChallengeEnabled: 0

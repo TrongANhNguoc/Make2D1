@@ -10,6 +10,8 @@ public class VictoryUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI nextBiomeText;
     [SerializeField] private Button playAgainButton;
+    [Tooltip("Độ đặc của nền panel khi hiện Victory (1 = che kín hoàn toàn)")]
+    [Range(0f, 1f)][SerializeField] private float backgroundAlpha = 0.95f;
 
     private void Start()
     {
@@ -26,7 +28,19 @@ public class VictoryUI : MonoBehaviour
 
     private void Show(BiomeData finished)
     {
-        if (panel != null) panel.SetActive(true);
+        if (panel != null)
+        {
+            // Vẽ panel đè lên HUD và làm nền gần đặc để chỉ còn thấy nội dung Victory
+            panel.transform.SetAsLastSibling();
+            Image background = panel.GetComponent<Image>();
+            if (background != null)
+            {
+                Color c = background.color;
+                c.a = backgroundAlpha;
+                background.color = c;
+            }
+            panel.SetActive(true);
+        }
         if (titleText != null) titleText.text = "VICTORY - " + finished.biomeName;
 
         ScoreManager score = ScoreManager.Instance;

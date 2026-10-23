@@ -99,7 +99,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   viewportAnchor: {x: 0.82, y: 0.88}
   followSmooth: 6
-  projectilePrefab: {fileID: 0}
+  projectilePrefab: {fileID: 8010076449948762020, guid: 7701c1795509b7148b347881039ceeb7, type: 3}
   skillInterval: 2
   aimedShotCount: 3
   aimedShotDelay: 0.25

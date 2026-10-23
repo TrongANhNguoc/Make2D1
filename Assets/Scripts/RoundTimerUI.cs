@@ -29,13 +29,23 @@ public class RoundTimerUI : MonoBehaviour
         clockFill.fillClockwise = false;
     }
 
-    // `root` phải là object khác object chứa script này, nếu không thì ẩn từng phần để Update vẫn chạy
+    // Tắt `root` chỉ an toàn khi script nằm NGOÀI root. Nếu script là con của root (hoặc chính root) thì tắt root
+    // sẽ tắt luôn Update → đồng hồ không bao giờ hiện lại ở ải sau, nên chỉ ẩn từng phần.
     private void SetVisible(bool visible)
     {
-        if (root != null && root != gameObject)
+        bool scriptInsideRoot = root != null && transform.IsChildOf(root.transform);
+
+        if (root != null && !scriptInsideRoot)
         {
             if (root.activeSelf != visible) root.SetActive(visible);
             return;
+        }
+
+        if (scriptInsideRoot)
+        {
+            // Nền của root (nếu có) cũng ẩn theo
+            UnityEngine.UI.Graphic rootGraphic = root.GetComponent<UnityEngine.UI.Graphic>();
+            if (rootGraphic != null) rootGraphic.enabled = visible;
         }
 
         if (clockFill != null) clockFill.enabled = visible;

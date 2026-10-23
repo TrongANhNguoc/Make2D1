@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36d38090a119af846a1ddebfcbddf476, type: 3}
   m_Name: Stage3_Hybrid
   m_EditorClassIdentifier: 
-  stageIndex: 1
-  stageType: 0
+  stageIndex: 3
+  stageType: 2
   targetHeight: 300
   timeLimit: 0
   bossPrefab: {fileID: 0}
-  fruitChallengeEnabled: 0
-  fruitRoundTime: 5
+  fruitChallengeEnabled: 1
+  fruitRoundTime: 10
   fruitTypesPerRound: 3
   fruitMaxCountPerType: 2
-  fruitRoundsToClear: 5
+  fruitRoundsToClear: 4
   fruitFailDamage: 1
   spawnCoinRate: 50
   spawnEnemyRate: 25

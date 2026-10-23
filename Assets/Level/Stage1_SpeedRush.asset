@@ -18,10 +18,10 @@ MonoBehaviour:
   timeLimit: 0
   bossPrefab: {fileID: 0}
   fruitChallengeEnabled: 1
-  fruitRoundTime: 5
+  fruitRoundTime: 10
   fruitTypesPerRound: 3
   fruitMaxCountPerType: 2
-  fruitRoundsToClear: 5
+  fruitRoundsToClear: 4
   fruitFailDamage: 1
   spawnCoinRate: 100
   spawnEnemyRate: 0

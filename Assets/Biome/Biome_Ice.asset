@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89b0be3f03ac374408d37126122a2a3d, type: 3}
   m_Name: Biome_Ice
   m_EditorClassIdentifier: 
-  biomeName: "Khu V\u01B0\u1EDDn"
+  biomeName: "B\u0103ng Gi\xE1"
   backgroundColor: {r: 0.16581617, g: 0.34423813, b: 0.40251565, a: 1}
   levels:
   - {fileID: 11400000, guid: a26e3b2638118b64da014afc6f327239, type: 2}

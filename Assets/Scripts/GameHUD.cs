@@ -28,6 +28,12 @@ public class GameHUD : MonoBehaviour
             UpdateWallet(CurrencyManager.Instance.Balance);
         }
 
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged += ApplyStateVisibility;
+            ApplyStateVisibility(GameManager.Instance.CurrentState);
+        }
+
         if (RunManager.Instance != null)
         {
             RunManager.Instance.OnStageChanged += UpdateStage;
@@ -44,7 +50,18 @@ public class GameHUD : MonoBehaviour
         }
 
         if (CurrencyManager.Instance != null) CurrencyManager.Instance.OnBalanceChanged -= UpdateWallet;
+        if (GameManager.Instance != null) GameManager.Instance.OnStateChanged -= ApplyStateVisibility;
         if (RunManager.Instance != null) RunManager.Instance.OnStageChanged -= UpdateStage;
+    }
+
+    // Victory: ẩn điểm, combo, ví để chỉ còn bảng Victory; chơi lại thì hiện lại
+    private void ApplyStateVisibility(GameState state)
+    {
+        bool show = state != GameState.Victory;
+        if (stageText != null) stageText.gameObject.SetActive(show);
+        if (scoreText != null) scoreText.gameObject.SetActive(show);
+        if (comboText != null) comboText.gameObject.SetActive(show);
+        if (walletText != null) walletText.gameObject.SetActive(show);
     }
 
     private void Update()
@@ -74,8 +91,7 @@ public class GameHUD : MonoBehaviour
             return;
         }
 
-        string text = "Vòng " + (challenge.RoundsCompleted + 1) + "/" + challenge.RoundsToClear
-                      + "  " + challenge.RoundTimeRemaining.ToString("0.0") + "s\n";
+        string text = "";
         foreach (var need in challenge.Needs)
         {
             if (need.Value > 0) text += need.Key + " x" + need.Value + "  ";
