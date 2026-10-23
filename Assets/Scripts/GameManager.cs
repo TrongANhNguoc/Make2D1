@@ -7,7 +7,14 @@ public enum GameState
     Playing,
     Paused,
     GameOver,
-    Victory
+    Victory,
+    Dead    // Player hết máu, chờ chọn Chơi lại / Xem video hồi sinh (timeScale = 0, như pause)
+}
+
+public enum GameMode
+{
+    SinglePlayer,
+    TwoPlayer
 }
 
 public class GameManager : MonoBehaviour
@@ -21,6 +28,8 @@ public class GameManager : MonoBehaviour
 
     public GameState CurrentState { get; private set; }
     public bool IsPlaying => CurrentState == GameState.Playing;
+    // Chế độ chơi đã chọn ở màn hình menu (GameManager sống qua các lần reload scene)
+    public GameMode SelectedMode { get; private set; } = GameMode.SinglePlayer;
 
     // Các script khác đăng ký để phản ứng khi trạng thái đổi (UI, spawner, ...)
     public event Action<GameState> OnStateChanged;
@@ -71,6 +80,18 @@ public class GameManager : MonoBehaviour
         SetState(GameState.Playing);
     }
 
+    public void SelectMode(GameMode mode)
+    {
+        SelectedMode = mode;
+    }
+
+    // Về màn hình chọn chế độ (dừng game như pause); lượt mới chỉ bắt đầu khi gọi StartGame()
+    public void GoToMenu()
+    {
+        slowMotionScale = 1f;
+        SetState(GameState.Menu);
+    }
+
     public void PauseGame()
     {
         if (CurrentState == GameState.Playing) SetState(GameState.Paused);
@@ -79,6 +100,19 @@ public class GameManager : MonoBehaviour
     public void ResumeGame()
     {
         if (CurrentState == GameState.Paused) SetState(GameState.Playing);
+    }
+
+    // Player vừa hết máu: dừng game nhưng chưa tính thua (GameOver chỉ gọi khi chọn Chơi lại)
+    public void PlayerDead()
+    {
+        if (CurrentState == GameState.Dead) return;
+        SetState(GameState.Dead);
+    }
+
+    // Hồi sinh: Dead → Playing
+    public void Revive()
+    {
+        if (CurrentState == GameState.Dead) SetState(GameState.Playing);
     }
 
     public void GameOver()
@@ -106,6 +140,7 @@ public class GameManager : MonoBehaviour
             case GameState.Paused:
             case GameState.Menu:
             case GameState.Victory:
+            case GameState.Dead:
                 return 0f;
             case GameState.Playing:
                 return slowMotionScale;

@@ -31,6 +31,9 @@ public class ObjectSpawner : MonoBehaviour
     [Range(0, 100)][SerializeField] private int airEnemySpawnChance = 15;
     [Range(0, 100)][SerializeField] private int groundEnemySpawnChance = 15;
 
+    // Vùng spawn ngang đang dùng: LevelConfig override hoặc minX/maxX serialized
+    private float currentMinX;
+    private float currentMaxX;
     private float nextSpawnY;
     private float spawnLimitY = float.MaxValue;
     private bool movingTraps;
@@ -81,12 +84,17 @@ public class ObjectSpawner : MonoBehaviour
         RunManager run = RunManager.Instance;
         LevelConfig level = run != null ? run.CurrentLevel : null;
 
+        // Mỗi map rộng khác nhau nên ải có thể override vùng spawn ngang
+        bool overrideX = level != null && level.overrideSpawnX;
+        currentMinX = overrideX ? Mathf.Min(level.spawnMinX, level.spawnMaxX) : minX;
+        currentMaxX = overrideX ? Mathf.Max(level.spawnMinX, level.spawnMaxX) : maxX;
+
         if (level != null)
         {
             nextSpawnY = run.StageStartY + spawnIntervalY;
             spawnLimitY = run.TargetY - stopSpawnMargin;
             movingTraps = level.stageType == StageType.Survival || level.stageType == StageType.Boss;
-            SpawnFixedTraps(level, run.StageStartY);
+            SpawnFixedTraps(level, run.HasStartPoint ? run.StageStartX : 0f, run.StageStartY);
 
             if (level.bossPrefab != null)
             {
@@ -102,8 +110,9 @@ public class ObjectSpawner : MonoBehaviour
         }
     }
 
-    // Bẫy ở vị trí cho trước: không random, không kiểm tra va chạm, người thiết kế tự đặt offset
-    private void SpawnFixedTraps(LevelConfig level, float stageStartY)
+    // Bẫy ở vị trí cho trước: không random, không kiểm tra va chạm, người thiết kế tự đặt offset.
+    // Có StartPoint thì offset (cả x, y) tính từ StartPoint; không có thì x là tọa độ thế giới (stageStartX = 0)
+    private void SpawnFixedTraps(LevelConfig level, float stageStartX, float stageStartY)
     {
         if (level.fixedTraps == null) return;
 
@@ -111,7 +120,7 @@ public class ObjectSpawner : MonoBehaviour
         {
             if (fixedTrap.prefab == null) continue;
 
-            Vector3 pos = new Vector3(fixedTrap.offset.x, stageStartY + fixedTrap.offset.y, 0f);
+            Vector3 pos = new Vector3(stageStartX + fixedTrap.offset.x, stageStartY + fixedTrap.offset.y, 0f);
             Track(Instantiate(fixedTrap.prefab, pos, Quaternion.identity));
         }
     }
@@ -168,7 +177,7 @@ public class ObjectSpawner : MonoBehaviour
     {
         for (int i = 0; i < 10; i++)
         {
-            Vector3 checkPos = new Vector3(Random.Range(minX, maxX), spawnY, 0f);
+            Vector3 checkPos = new Vector3(Random.Range(currentMinX, currentMaxX), spawnY, 0f);
             if (Physics2D.OverlapCircle(checkPos, 0.5f, ObstacleMask) == null)
             {
                 pos = checkPos;
@@ -276,7 +285,7 @@ public class ObjectSpawner : MonoBehaviour
 
         for (int i = 0; i < 12; i++)
         {
-            Vector2 origin = new Vector2(Random.Range(minX, maxX), spawnY);
+            Vector2 origin = new Vector2(Random.Range(currentMinX, currentMaxX), spawnY);
 
             // Điểm xuất phát nằm trong tường/nền thì tia không trúng chính nó → bỏ qua
             if (Physics2D.OverlapPoint(origin, ObstacleMask) != null) continue;

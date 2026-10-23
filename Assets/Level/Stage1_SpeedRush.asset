@@ -17,6 +17,10 @@ MonoBehaviour:
   targetHeight: 150
   timeLimit: 0
   bossPrefab: {fileID: 0}
+  terrainPrefab: {fileID: 9140894986951114470, guid: 65deaf3b42641734a9dbff9221e0c522, type: 3}
+  overrideSpawnX: 0
+  spawnMinX: -4
+  spawnMaxX: 4
   fruitChallengeEnabled: 1
   fruitRoundTime: 10
   fruitTypesPerRound: 3

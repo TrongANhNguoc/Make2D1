@@ -161,6 +161,12 @@ public class FruitChallengeManager : MonoBehaviour
         if (IsActive) StartRound();
     }
 
+    // Hồi sinh: bắt đầu lại vòng hiện tại với đủ thời gian (giữ nguyên số vòng đã xong)
+    public void RestartCurrentRound()
+    {
+        if (IsActive) StartRound();
+    }
+
     // Random N loại quả khác nhau, mỗi loại 1..maxCount quả
     private void StartRound()
     {

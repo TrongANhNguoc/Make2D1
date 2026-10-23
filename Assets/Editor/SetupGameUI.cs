@@ -12,7 +12,7 @@ using UnityEngine.UI;
 // bố cục chỉ áp dụng cho object mới tạo (không ghi đè chỉnh sửa tay), còn việc gán trường luôn được làm lại.
 public static class SetupGameUI
 {
-    private static readonly List<string> log = new List<string>();
+    internal static readonly List<string> log = new List<string>();
 
     [MenuItem("Tools/Make2D1/Setup Game UI")]
     private static void Run()
@@ -36,7 +36,7 @@ public static class SetupGameUI
 
     // ---------------------------------------------------------------- Canvas / EventSystem
 
-    private static Canvas GetOrCreateCanvas()
+    internal static Canvas GetOrCreateCanvas()
     {
         Canvas canvas = Object.FindObjectOfType<Canvas>(true);
         if (canvas != null)
@@ -62,7 +62,7 @@ public static class SetupGameUI
         return canvas;
     }
 
-    private static void EnsureEventSystem()
+    internal static void EnsureEventSystem()
     {
         if (Object.FindObjectOfType<EventSystem>(true) != null) return;
 
@@ -224,7 +224,7 @@ public static class SetupGameUI
     // ---------------------------------------------------------------- Helpers
 
     // Tìm con trực tiếp theo tên (kể cả đang inactive) hoặc tạo mới; bảo đảm có đủ component yêu cầu
-    private static GameObject GetOrCreateUI(string name, Transform parent, out bool created, params System.Type[] components)
+    internal static GameObject GetOrCreateUI(string name, Transform parent, out bool created, params System.Type[] components)
     {
         Transform existing = parent.Find(name);
         if (existing != null)
@@ -248,7 +248,7 @@ public static class SetupGameUI
         return go;
     }
 
-    private static TextMeshProUGUI GetOrCreateText(string name, Transform parent, string text, float fontSize,
+    internal static TextMeshProUGUI GetOrCreateText(string name, Transform parent, string text, float fontSize,
         TextAlignmentOptions alignment, System.Action<RectTransform> layout, bool outline)
     {
         GameObject go = GetOrCreateUI(name, parent, out bool created, typeof(TextMeshProUGUI));
@@ -273,7 +273,7 @@ public static class SetupGameUI
         return tmp;
     }
 
-    private static void Stretch(RectTransform rt)
+    internal static void Stretch(RectTransform rt)
     {
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
@@ -282,7 +282,7 @@ public static class SetupGameUI
     }
 
     // Anchor = pivot = anchor point (góc/cạnh/tâm), pos tính từ anchor đó
-    private static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
+    internal static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
     {
         rt.anchorMin = anchor;
         rt.anchorMax = anchor;
@@ -291,7 +291,7 @@ public static class SetupGameUI
         rt.sizeDelta = size;
     }
 
-    private static void Assign(SerializedObject so, string field, Object value)
+    internal static void Assign(SerializedObject so, string field, Object value)
     {
         SerializedProperty prop = so.FindProperty(field);
         if (prop == null)

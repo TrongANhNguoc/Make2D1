@@ -13,7 +13,8 @@ public enum StageType
 public struct FixedTrapSpawn
 {
     public GameObject prefab;
-    [Tooltip("x = tọa độ thế giới; y = độ cao tính từ điểm xuất phát của ải")]
+    [Tooltip("Tính từ điểm xuất phát của ải. Có StartPoint: cả x và y đều cộng vào vị trí StartPoint. " +
+             "Không có StartPoint: x = tọa độ thế giới, y = độ cao từ điểm xuất phát")]
     public Vector2 offset;
 }
 
@@ -33,6 +34,17 @@ public class LevelConfig : ScriptableObject
 
     [Tooltip("Prefab boss (có BossController) xuất hiện ở góc trên màn hình suốt ải. Để trống = không có boss")]
     public GameObject bossPrefab;
+
+    [Header("Terrain")]
+    [Tooltip("Prefab địa hình riêng của ải (Grid + Tilemap layer Ground, có thể có child StartPoint / PortalPoint / CameraBounds). " +
+             "Trống = dùng Grid có sẵn trong scene. Có PortalPoint thì độ cao ải tính tới PortalPoint thay vì targetHeight")]
+    public GameObject terrainPrefab;
+
+    [Header("Spawn Area")]
+    [Tooltip("Bật để dùng vùng spawn ngang riêng của ải thay cho minX/maxX của ObjectSpawner (tọa độ thế giới)")]
+    public bool overrideSpawnX = false;
+    public float spawnMinX = -4f;
+    public float spawnMaxX = 4f;
 
     [Header("Fruit Challenge (ải Speed Rush)")]
     [Tooltip("Bật cơ chế: ăn đủ các loại quả yêu cầu trong thời gian của mỗi vòng, lặp lại tới khi qua ải")]

@@ -18,9 +18,19 @@ public class RunManager : MonoBehaviour
     [SerializeField] private bool autoAdvanceByHeight = false;
     [SerializeField] private float advanceCooldown = 0.5f;
 
+    [Header("Terrain")]
+    [Tooltip("Tên object gốc trong scene chứa địa hình mặc định, dùng cho ải không có terrainPrefab (bị ẩn khi ải dùng prefab)")]
+    [SerializeField] private string defaultTerrainName = "Grid";
+
+    [Header("Revive")]
+    [Tooltip("Số giây cộng thêm cho ải có giới hạn thời gian khi hồi sinh sau lúc hết giờ")]
+    [SerializeField] private float reviveExtraSeconds = 15f;
+
     private Transform playerTransform;
     private Vector3 startPosition;
+    private float stageStartX;
     private float stageStartY;
+    private StageTerrainLoader terrain;
     private float lastAdvanceTime = float.NegativeInfinity;
     private bool runActive;
     private bool restartPending;
@@ -38,8 +48,21 @@ public class RunManager : MonoBehaviour
     public BiomeData NextBiome { get; private set; }
     public BiomeData JustUnlockedBiome { get; private set; }
     public LevelConfig CurrentLevel => CurrentBiome != null ? CurrentBiome.GetLevel(CurrentStageIndex) : null;
+    public float StageStartX => stageStartX;
     public float StageStartY => stageStartY;
-    public float TargetY => CurrentLevel != null ? stageStartY + CurrentLevel.targetHeight : stageStartY;
+    // Terrain của ải có child StartPoint / PortalPoint hay không
+    public bool HasStartPoint => terrain != null && terrain.StartPoint != null;
+    public bool HasPortalPoint => terrain != null && terrain.PortalPoint != null;
+    public Vector3 PortalPointPosition => HasPortalPoint ? terrain.PortalPoint.position : Vector3.zero;
+    // Có PortalPoint thì độ cao đích = y của PortalPoint, không thì StageStartY + targetHeight
+    public float TargetY
+    {
+        get
+        {
+            if (CurrentLevel == null) return stageStartY;
+            return HasPortalPoint ? terrain.PortalPoint.position.y : stageStartY + CurrentLevel.targetHeight;
+        }
+    }
     public int UnlockedBiomeCount { get; private set; } = 1;
 
     public event Action<BiomeData> OnRunStarted;
@@ -56,6 +79,7 @@ public class RunManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        terrain = new StageTerrainLoader(defaultTerrainName);
         SceneManager.sceneLoaded += HandleSceneLoaded;
         LoadUnlockedCount();
     }
@@ -98,9 +122,21 @@ public class RunManager : MonoBehaviour
         StageTimeRemaining = Mathf.Max(0f, StageTimeRemaining - Time.deltaTime);
         if (StageTimeRemaining > 0f) return;
 
-        timedOut = true;
         PlayerCollision player = FindObjectOfType<PlayerCollision>();
+        // Đang bất tử (vừa hồi sinh) thì Kill bị bỏ qua → chờ hết bất tử mới tính hết giờ, tránh kẹt timedOut
+        if (player != null && player.IsInvincible) return;
+
+        timedOut = true;
         if (player != null) player.Kill();
+    }
+
+    // Player hồi sinh: nếu chết do hết giờ ải thì mở lại đồng hồ và cộng thêm thời gian
+    public void HandleRevive()
+    {
+        if (!timedOut) return;
+
+        timedOut = false;
+        StageTimeRemaining += reviveExtraSeconds;
     }
 
     // Phá đảo 4 ải: nhận ×2 Fruit Coins toàn trận. Thất bại: giữ 100% số coin đã nhặt
@@ -132,6 +168,13 @@ public class RunManager : MonoBehaviour
     {
         BeginRun(true);
         if (GameManager.Instance != null) GameManager.Instance.StartGame();
+    }
+
+    // Chuẩn bị run mới (ải 1, đưa player về điểm xuất phát) nhưng CHƯA chạy game: dùng khi "Về menu" sau Victory,
+    // lượt chơi bắt đầu khi người chơi chọn chế độ ở menu (GameManager.StartGame)
+    public void PrepareNewRun()
+    {
+        BeginRun(true);
     }
 
     private void BeginRun(bool teleportPlayer)
@@ -179,9 +222,17 @@ public class RunManager : MonoBehaviour
     private void BeginStage(bool teleportPlayer)
     {
         Transform player = GetPlayer();
-        if (player != null && teleportPlayer) TeleportPlayerToStart(player);
 
-        stageStartY = player != null ? startPosition.y : 0f;
+        // Terrain phải xong trước khi teleport player và trước OnStageChanged (spawner raycast vào ground)
+        terrain.Load(CurrentLevel);
+
+        Vector3 start = terrain.StartPoint != null ? terrain.StartPoint.position : startPosition;
+
+        // Có StartPoint thì luôn đưa player tới đó (kể cả lần vào đầu tiên / sau reload scene)
+        if (player != null && (teleportPlayer || terrain.StartPoint != null)) TeleportPlayerToStart(player, start);
+
+        stageStartX = start.x;
+        stageStartY = (player != null || terrain.StartPoint != null) ? start.y : 0f;
 
         timedOut = false;
         StageTimeRemaining = HasTimeLimit ? CurrentLevel.timeLimit : 0f;
@@ -190,15 +241,16 @@ public class RunManager : MonoBehaviour
         OnStageChanged?.Invoke(CurrentBiome, CurrentLevel);
     }
 
-    private void TeleportPlayerToStart(Transform player)
+    private void TeleportPlayerToStart(Transform player, Vector3 target)
     {
-        Vector3 delta = startPosition - player.position;
-        player.position = startPosition;
+        target.z = player.position.z;
+        Vector3 delta = target - player.position;
+        player.position = target;
 
         Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.position = startPosition;
+            rb.position = target;
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
         }

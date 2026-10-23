@@ -10,6 +10,8 @@ public class VictoryUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI nextBiomeText;
     [SerializeField] private Button playAgainButton;
+    [Tooltip("Tùy chọn: nút 'Về menu' — quay lại màn hình chọn chế độ, lượt mới bắt đầu khi bấm '1 người'")]
+    [SerializeField] private Button backToMenuButton;
     [Tooltip("Độ đặc của nền panel khi hiện Victory (1 = che kín hoàn toàn)")]
     [Range(0f, 1f)][SerializeField] private float backgroundAlpha = 0.95f;
 
@@ -17,6 +19,7 @@ public class VictoryUI : MonoBehaviour
     {
         if (panel != null) panel.SetActive(false);
         if (playAgainButton != null) playAgainButton.onClick.AddListener(OnPlayAgain);
+        if (backToMenuButton != null) backToMenuButton.onClick.AddListener(OnBackToMenu);
 
         if (RunManager.Instance != null) RunManager.Instance.OnVictory += Show;
     }
@@ -59,6 +62,15 @@ public class VictoryUI : MonoBehaviour
             }
             nextBiomeText.text = text;
         }
+    }
+
+    private void OnBackToMenu()
+    {
+        if (panel != null) panel.SetActive(false);
+
+        // Chuẩn bị sẵn run mới (đưa player về điểm xuất phát) rồi dừng ở menu; MainMenuUI tự hiện khi state = Menu
+        if (RunManager.Instance != null) RunManager.Instance.PrepareNewRun();
+        if (GameManager.Instance != null) GameManager.Instance.GoToMenu();
     }
 
     private void OnPlayAgain()

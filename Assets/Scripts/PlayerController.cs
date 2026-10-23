@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(LineRenderer))]
@@ -174,7 +175,10 @@ public class PlayerController : MonoBehaviour
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         // Bắt đầu kéo
-        if (Input.GetMouseButtonDown(0) && remainingJumps > 0)
+        // Click trúng UI (nút menu, nút Victory...) không được tính là bắt đầu kéo
+        bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        if (Input.GetMouseButtonDown(0) && remainingJumps > 0 && !pointerOverUI)
         {
             isDragging = true;
             dragStartPos = mouseWorldPos;

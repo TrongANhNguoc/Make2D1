@@ -26,7 +26,8 @@ public class DebugCheats : MonoBehaviour
 
         PlayerCollision player = FindObjectOfType<PlayerCollision>();
         if (Input.GetKeyDown(KeyCode.H) && player != null) player.TakeDamage(1);   // mất 1 tim
-        if (Input.GetKeyDown(KeyCode.K) && player != null) player.Kill();          // chết -> GameOver -> reload
+        if (Input.GetKeyDown(KeyCode.K) && player != null) player.Kill();          // chết -> hiện DeathUI (bị bỏ qua khi đang bất tử)
+        if (Input.GetKeyDown(KeyCode.R) && player != null) player.Revive();        // hồi sinh ngay, bỏ qua video (chỉ khi đang chết)
 
         if (Input.GetKeyDown(KeyCode.C) && CurrencyManager.Instance != null) CurrencyManager.Instance.AddCoins(10);
         if (Input.GetKeyDown(KeyCode.X) && ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(100);
@@ -55,7 +56,7 @@ public class DebugCheats : MonoBehaviour
         ScoreManager sm = ScoreManager.Instance;
         FruitChallengeManager fc = FruitChallengeManager.Instance;
 
-        string info = "[DEBUG]  N: next stage | T: tới Portal | H: -1 máu | K: chết\n"
+        string info = "[DEBUG]  N: next stage | T: tới Portal | H: -1 máu | K: chết | R: hồi sinh ngay\n"
                     + "C: +10 coin | X: +100 điểm | P: pause | F12: xóa save\n";
         if (gm != null) info += "State: " + gm.CurrentState + "  timeScale: " + Time.timeScale.ToString("0.00") + "\n";
         if (run != null && run.CurrentBiome != null && run.CurrentLevel != null)
