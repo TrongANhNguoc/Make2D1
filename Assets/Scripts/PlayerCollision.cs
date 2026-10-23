@@ -1,12 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+using System;
 using UnityEngine;
 using TMPro;
+
 public class PlayerCollision : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI healthText;
-    [SerializeField] private int maxJumps = 2;
 
     [Header("Health Player")]
     [SerializeField] private int maxHealth = 3;
@@ -14,32 +12,30 @@ public class PlayerCollision : MonoBehaviour
 
     [Header("Attack Enemy")]
     [SerializeField] private float bounceForce = 6f;
+    [SerializeField] private int enemyKillPoints = 100;
 
     private Rigidbody2D rb;
     private Collider2D playerCollider;
+    private PlayerController playerController;
     private bool isDead = false;
-    private int remainingJumps;
-    
-    // Start is called before the first frame update
+
+    public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
+
+    // (máu hiện tại, máu tối đa) — HeartsUI đăng ký để vẽ trái tim
+    public event Action<int, int> OnHealthChanged;
 
     private void Awake()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
-        remainingJumps = maxJumps;
         playerCollider = GetComponent<Collider2D>();
+        playerController = GetComponent<PlayerController>();
         UpdateHealthUI();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-
         if (isDead) return;
         if (collision.gameObject.CompareTag("Enemy"))
         {
@@ -47,49 +43,51 @@ public class PlayerCollision : MonoBehaviour
             if (contact.normal.y > 0.5f)
             {
                 rb.velocity = new Vector2(rb.velocity.x, bounceForce);
-                AddExtraJump(1);
+                playerController.AddExtraJump(1);
+                if (ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(enemyKillPoints);
                 Destroy(collision.gameObject);
             }
             else
             {
-                TakeDamge(1);
-
+                TakeDamage(1);
             }
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    public void TakeDamage(int damage)
     {
-        if (collision.gameObject.CompareTag("Coin"))
-        {
-            Debug.Log("Hit Coin");
-        }
-    }
-    public void AddExtraJump(int amount = 1)
-    {
-        remainingJumps = Mathf.Min(remainingJumps + amount, maxJumps);
-    }
-    public void TakeDamge(int damge)
-    {
-        currentHealth -= damge;
+        if (isDead) return;
+
+        currentHealth -= damage;
         UpdateHealthUI();
         if (currentHealth <= 0)
         {
             Die();
         }
     }
+
+    // Chết ngay (vd. hết giờ ải Speed Rush)
+    public void Kill()
+    {
+        TakeDamage(currentHealth);
+    }
+
     private void Die()
     {
         isDead = true;
         playerCollider.enabled = false;
         rb.velocity = new Vector2(0, 5f);
-        GetComponent<PlayerController>().enabled = false;
+        playerController.enabled = false;
+
+        if (GameManager.Instance != null) GameManager.Instance.GameOver();
         Invoke(nameof(ReloadScene), 2f);
     }
 
-private void UpdateHealthUI()
+    private void UpdateHealthUI()
     {
-        if(healthText != null)
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        if (healthText != null)
         {
             healthText.text = "HP: " + currentHealth + "/" + maxHealth;
         }
@@ -97,8 +95,14 @@ private void UpdateHealthUI()
 
     private void ReloadScene()
     {
-        
-        Time.timeScale = 1f;
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.StartGame();
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
 
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name

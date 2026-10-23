@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36d38090a119af846a1ddebfcbddf476, type: 3}
+  m_Name: Stage3_Hybrid
+  m_EditorClassIdentifier: 
+  stageIndex: 1
+  stageType: 0
+  targetHeight: 300
+  timeLimit: 0
+  bossPrefab: {fileID: 0}
+  fruitChallengeEnabled: 0
+  fruitRoundTime: 5
+  fruitTypesPerRound: 3
+  fruitMaxCountPerType: 2
+  fruitRoundsToClear: 5
+  fruitFailDamage: 1
+  spawnCoinRate: 50
+  spawnEnemyRate: 25
+  spawnTrapRate: 25
+  fixedTraps:
+  - prefab: {fileID: 2595451625914755713, guid: 008c6c948097e1f4fb12eb5eaf2945e6, type: 3}
+    offset: {x: 2, y: 40}

@@ -1,0 +1,204 @@
+﻿Game
+1. Cần làm
+1. Nhân vật Poinpy và hệ thống skin theo 4 độ hiếm.
+2. Dây nối, quái vật, hoa quả, Fruit Coin, vật phẩm.
+3. Môi trường và màn chơi: nền, platform, vực, checkpoint.
+4. UI sảnh, Gacha, Shop, Tủ đồ, Cài đặt, Bảng xếp hạng, Thành tựu.
+5. UI trong trận: HUD, joystick, đồng hồ cứu hộ, bảng hồi sinh, Game Over.
+6. Animation và hiệu ứng (VFX).
+2. Thứ tự làm việc
+Việc phải làm
+	Xong khi
+	Mini Art Bible: phong cách, bảng màu, độ phân giải UI, Pixels Per Unit. Concept Game
+	Có 1 trang chốt phong cách và Game được vẽ xong bản chính
+	Player, dây, 1 loại quái, hoa quả, Fruit Coin, 1 nền cùng platform, vực, checkpoint, HUD và joystick tối thiểu
+	Lập trình chơi hết 1 vòng với hình thật
+	UI kit, sảnh cơ bản, popup chọn chế độ, bảng hồi sinh, Game Over
+	Đi được sảnh → trận → hồi sinh hoặc thua → về sảnh
+	Skin 4 độ hiếm, khung độ hiếm, Gacha, Shop, Tủ đồ, bệ nhân vật, Pity
+	Quay Gacha, mua, trang bị và thấy skin ở sảnh
+	Giao diện 1 thiết bị 2 người, màn hình phòng chơi cho 2 thiết bị
+	Hai người thật chơi thử được trên máy thật
+	Thêm quái, thêm chủ đề màn, VFX đầy đủ, Cài đặt, Bảng xếp hạng, Thành tựu
+	Đủ số lượng nội dung đã chốt
+	
+
+3. Danh sách asset chi tiết
+3.1 Nhân vật và skin
+Hạng mục
+	Cần làm
+	Ưu tiên
+	Player mặc định
+	Sprite tách lớp; animation: idle, ngắm kéo dây, bắn, bay, tiếp đất, bị kéo, rơi, được cứu, ăn coin, thắng, thua; biểu cảm bình thường, vui, sợ
+	P0
+	Biến thể Player1 và Player2
+	Khác màu chính hoặc viền hoặc phụ kiện để nhận ra ngay
+	P0
+	Điểm neo dây
+	Một vị trí chuẩn chung cho mọi skin; ghi lại cho lập trình
+	P0
+	Skin Common (70%)
+	Đổi màu hoặc họa tiết đơn giản
+	P1
+	Skin Rare (22%)
+	Có phụ kiện hoặc họa tiết riêng
+	P1
+	Skin Epic (7%)
+	Thiết kế riêng, hiệu ứng nhẹ
+	P1
+	Skin Legendary (1%)
+	Thiết kế cao cấp (hoạt ảnh xuất hiện riêng)
+	P1
+	Khung độ hiếm
+	4 bậc, dùng thống nhất ở Tủ đồ, Shop, Gacha
+	P1
+	Hình bệ sảnh và icon skin
+	Bản lớn cho sảnh, icon vuông cho lưới
+	P1
+	
+
+3.2 Dây, quái, hoa quả, vật phẩm
+Hạng mục
+	Cần làm
+	Ưu tiên
+	Dây và nút dây
+	Sprite ghép liền mạch khi căng hoặc chùng
+	P0
+	Quái vật
+	Mỗi loại: hoạt động, trúng đòn, biến mất. Làm 1 loại trước
+	P0 (1 loại), P1 (thêm)
+	Hoa quả
+	Vài loại, mỗi loại dễ phân biệt ở kích thước nhỏ
+	P0
+	Fruit Coin
+	Sprite xoay và icon cho HUD, sảnh
+	P0
+	Rope Trail
+	Vệt dây theo skin; dùng Trail Renderer hoặc Particle
+	P1
+	Icon kim cương hoặc vé Gacha
+	Tiền tệ phụ nếu game có
+	P1
+	3.3 Môi trường và màn chơi
+Hạng mục
+	Cần làm
+	Ưu tiên
+	Nền parallax
+	Nhiều lớp cho 1 chủ đề đầu tiên
+	P0
+	Platform và tileset
+	Ghép liền không thấy đường nối
+	P0
+	Vực và vùng nguy hiểm
+	Nhìn ra ngay đâu là nơi rơi
+	P0
+	Checkpoint
+	Biểu tượng cùng trạng thái đã kích hoạt (dùng cho hồi sinh)
+	P0
+	Chủ đề màn mới
+	Đổi màu từ chủ đề đầu trước; vẽ lại nếu còn thời gian
+	P1
+	Vật trang trí
+	Cây, đá, mây để nền sinh động
+	P2
+	
+
+3.4 UI sảnh, Gacha, Shop, Tủ đồ
+Hạng mục
+	Cần làm
+	Ưu tiên
+	UI kit chung
+	Nút 3 trạng thái, khung, popup 9-slice, font, bảng màu UI
+	P0
+	Thanh trên (Top Bar)
+	Khung Fruit Coins, khung Kim cương hoặc Vé Gacha, nút Cài đặt
+	P0
+	Thanh dưới (Bottom Bar)
+	Nút Play lớn nhất ở giữa; nút Gacha/Shop, Tủ đồ, Bảng xếp hạng, Thành tựu
+	P0
+	Popup chọn chế độ
+	1 Người chơi, 2 Người chơi (kèm chọn 1 hay 2 thiết bị)
+	P0
+	Trung tâm sảnh
+	Bệ đứng cho Poinpy, vùng hạt và Rope Trail, khung hiển thị buff (ví dụ "+10% Fruit Coins")
+	P1
+	Máy Gacha
+	Hình máy, nút quay 1 lượt (500 coin) và 10 lượt (4.500 coin)
+	P1
+	Kết quả Gacha
+	Màn 1 lượt, lưới 10 ô, thông báo trùng skin quy đổi 50% coin, thanh Pity 30 lượt, bảng tỷ lệ 70/22/7/1
+	P1
+	Shop mua trực tiếp
+	Lưới skin giá 2.000 – 10.000 coin, nhãn đã sở hữu, trạng thái không đủ coin
+	P1
+	Tủ đồ
+	Lưới skin và Trail, nhãn đang mặc, nút Trang bị, xem trước nhân vật và buff
+	P1
+	Cài đặt
+	Âm lượng, ngôn ngữ, chất lượng đồ họa
+	P1
+	Bảng xếp hạng và Thành tựu
+	Danh sách xếp hạng, lưới thành tựu, popup nhận thưởng
+	P2
+	3.5 UI trong trận, hồi sinh, Game Over
+Hạng mục
+	Cần làm
+	Ưu tiên
+	HUD
+	Điểm, coin trong trận, Combo, nút Tạm dừng
+	P0
+	Joystick ảo hoặc vùng chạm
+	Nền và núm; chế độ 1 thiết bị: P1 góc dưới trái, P2 góc dưới phải, khác màu
+	P0
+	Bảng hồi sinh
+	Nền mờ đen 50 – 70%; dòng "Bạn đã rơi xuống vực!" hoặc "Hồi sinh ngay?"; đồng hồ đếm 5 giây; 3 nút: Hồi sinh (Xem Video) có icon quảng cáo, Chơi lại từ đầu, Về sảnh chính
+	P0
+	Game Over
+	Tổng kết điểm, coin nhận được, nút chơi lại và về sảnh
+	P0
+	Thông báo nổi
+	"+Coin", "Combo"
+	P1
+	Menu tạm dừng
+	Tiếp tục, chơi lại, về sảnh, cài đặt
+	P1
+	3.6 Chế độ 2 người
+Chế độ
+	Cần làm
+	Ưu tiên
+	2 người, 1 thiết bị
+	Hai cụm điều khiển ở hai góc dưới, màn hình ngang, vùng chạm đủ rộng để hai ngón cái không vướng; điểm riêng cho từng người
+	P1
+	2 người, 2 thiết bị
+	Màn tạo phòng và nhập mã 4 số, trạng thái chờ đối tác, mất kết nối, biểu tượng độ trễ
+	P1
+	Camera thu xa
+	Thử nhân vật và coin ở mức zoom xa nhất; nếu quá nhỏ thì tăng nét viền, độ tương phản
+	P0
+	
+
+3.7 Animation (ngoài nhân vật) và VFX
+Hạng mục
+	Cần làm
+	Ưu tiên
+	Animation UI
+	Nút nhấn, popup hiện và ẩn, số đếm, thanh Pity
+	P1
+	Animation quái, coin, hoa quả
+	Idle, trúng đòn, biến mất, xoay
+	P1
+	VFX thu thập
+	Nổ nhẹ khi ăn coin, hoa quả; số "+" bay lên
+	P1
+	VFX rơi, cứu, hồi sinh
+	Hiệu ứng rơi vực, kéo bạn lên, hồi sinh tại checkpoint
+	P1
+	VFX va chạm
+	Trúng đòn, quái tan biến
+	P1
+	Hiệu ứng mở Gacha
+	Mức sáng tăng dần từ Common đến Legendary; Legendary có hoạt ảnh riêng
+	P1
+	Hạt ở sảnh
+	Hạt quanh bệ theo độ hiếm skin
+	P2

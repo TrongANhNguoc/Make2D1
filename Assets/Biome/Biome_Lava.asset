@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89b0be3f03ac374408d37126122a2a3d, type: 3}
+  m_Name: Biome_Lava
+  m_EditorClassIdentifier: 
+  biomeName: "Khu V\u01B0\u1EDDn"
+  backgroundColor: {r: 0.5345911, g: 0.18474963, b: 0.13953161, a: 1}
+  levels:
+  - {fileID: 11400000, guid: a26e3b2638118b64da014afc6f327239, type: 2}
+  - {fileID: 11400000, guid: beeaac4141af2f84793f17b8b9307bd3, type: 2}
+  - {fileID: 11400000, guid: 4d3882ac52409414bb6301eaeb04147e, type: 2}
+  - {fileID: 11400000, guid: 83a771d001678604da7c4c123b342919, type: 2}

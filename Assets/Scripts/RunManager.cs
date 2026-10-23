@@ -1,0 +1,320 @@
+using System;
+using Cinemachine;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class RunManager : MonoBehaviour
+{
+    private const string UnlockedBiomeKey = "Biome_UnlockedCount";
+
+    public static RunManager Instance { get; private set; }
+
+    [Header("Biomes")]
+    [Tooltip("Danh sách biome theo thứ tự mở khóa. Biome đầu luôn mở; thắng biome mới nhất thì mở biome kế")]
+    [SerializeField] private BiomeData[] biomes;
+
+    [Header("Stage Progress")]
+    [Tooltip("Tự chuyển ải khi player đạt targetHeight (ngoài cách chui qua Portal)")]
+    [SerializeField] private bool autoAdvanceByHeight = false;
+    [SerializeField] private float advanceCooldown = 0.5f;
+
+    private Transform playerTransform;
+    private Vector3 startPosition;
+    private float stageStartY;
+    private float lastAdvanceTime = float.NegativeInfinity;
+    private bool runActive;
+    private bool restartPending;
+    private bool timedOut;
+    private bool rewardGiven;
+
+    public float StageTimeRemaining { get; private set; }
+    public bool HasTimeLimit => CurrentLevel != null && CurrentLevel.timeLimit > 0f;
+    // Fruit Coins nhận được ở cuối run gần nhất (đã nhân ×2 nếu thắng)
+    public int LastRunReward { get; private set; }
+
+    // 0-based: 0 = ải 1 ... 3 = ải 4
+    public int CurrentStageIndex { get; private set; }
+    public BiomeData CurrentBiome { get; private set; }
+    public BiomeData NextBiome { get; private set; }
+    public BiomeData JustUnlockedBiome { get; private set; }
+    public LevelConfig CurrentLevel => CurrentBiome != null ? CurrentBiome.GetLevel(CurrentStageIndex) : null;
+    public float StageStartY => stageStartY;
+    public float TargetY => CurrentLevel != null ? stageStartY + CurrentLevel.targetHeight : stageStartY;
+    public int UnlockedBiomeCount { get; private set; } = 1;
+
+    public event Action<BiomeData> OnRunStarted;
+    public event Action<BiomeData, LevelConfig> OnStageChanged;
+    public event Action<BiomeData> OnVictory;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        LoadUnlockedCount();
+    }
+
+    private void Start()
+    {
+        if (GameManager.Instance != null) GameManager.Instance.OnStateChanged += HandleGameStateChanged;
+        StartRun();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance != this) return;
+
+        Instance = null;
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        if (GameManager.Instance != null) GameManager.Instance.OnStateChanged -= HandleGameStateChanged;
+    }
+
+    private void Update()
+    {
+        if (GameManager.Instance != null && !GameManager.Instance.IsPlaying) return;
+
+        UpdateStageTimer();
+
+        if (!autoAdvanceByHeight || CurrentLevel == null) return;
+
+        Transform player = GetPlayer();
+        if (player != null && player.position.y >= TargetY)
+        {
+            LoadNextStage();
+        }
+    }
+
+    // Dùng deltaTime có scale: ngắm bắn slow-mo không bị trừ giờ như thời gian thật
+    private void UpdateStageTimer()
+    {
+        if (!runActive || timedOut || !HasTimeLimit) return;
+
+        StageTimeRemaining = Mathf.Max(0f, StageTimeRemaining - Time.deltaTime);
+        if (StageTimeRemaining > 0f) return;
+
+        timedOut = true;
+        PlayerCollision player = FindObjectOfType<PlayerCollision>();
+        if (player != null) player.Kill();
+    }
+
+    // Phá đảo 4 ải: nhận ×2 Fruit Coins toàn trận. Thất bại: giữ 100% số coin đã nhặt
+    private void AwardRunCoins(bool victory)
+    {
+        if (rewardGiven) return;
+        rewardGiven = true;
+
+        int coins = ScoreManager.Instance != null ? ScoreManager.Instance.FruitCoins : 0;
+        if (victory) coins *= 2;
+
+        LastRunReward = coins;
+        if (CurrencyManager.Instance != null) CurrencyManager.Instance.AddCoins(coins);
+    }
+
+    public bool IsBiomeUnlocked(int index)
+    {
+        return index >= 0 && index < UnlockedBiomeCount;
+    }
+
+    // Bắt đầu 1 run mới: ải 1 của biome đã chọn (lượt đầu = biome đầu tiên, lượt sau = biome đã random)
+    public void StartRun()
+    {
+        BeginRun(false);
+    }
+
+    // Dùng cho nút "Chơi tiếp" sau Victory: run mới + đưa player về điểm xuất phát + chạy lại game
+    public void StartNewRun()
+    {
+        BeginRun(true);
+        if (GameManager.Instance != null) GameManager.Instance.StartGame();
+    }
+
+    private void BeginRun(bool teleportPlayer)
+    {
+        if (biomes == null || biomes.Length == 0)
+        {
+            Debug.LogWarning("RunManager: chưa gán danh sách Biome.");
+            return;
+        }
+
+        CurrentBiome = NextBiome != null ? NextBiome : biomes[0];
+        NextBiome = null;
+        JustUnlockedBiome = null;
+        CurrentStageIndex = 0;
+        runActive = true;
+        restartPending = false;
+        rewardGiven = false;
+        LastRunReward = 0;
+
+        ApplyBiome();
+        BeginStage(teleportPlayer);
+
+        OnRunStarted?.Invoke(CurrentBiome);
+    }
+
+    // Gọi khi đạt độ cao hoặc chui qua Portal
+    public void LoadNextStage()
+    {
+        if (CurrentBiome == null || !runActive) return;
+        if (Time.unscaledTime - lastAdvanceTime < advanceCooldown) return;
+        lastAdvanceTime = Time.unscaledTime;
+
+        if (CurrentStageIndex + 1 < CurrentBiome.StageCount)
+        {
+            CurrentStageIndex++;
+            BeginStage(true);
+        }
+        else
+        {
+            CompleteRun();
+        }
+    }
+
+    // Room-to-Room: mỗi ải bắt đầu lại từ điểm xuất phát của player
+    private void BeginStage(bool teleportPlayer)
+    {
+        Transform player = GetPlayer();
+        if (player != null && teleportPlayer) TeleportPlayerToStart(player);
+
+        stageStartY = player != null ? startPosition.y : 0f;
+
+        timedOut = false;
+        StageTimeRemaining = HasTimeLimit ? CurrentLevel.timeLimit : 0f;
+
+        if (ScoreManager.Instance != null) ScoreManager.Instance.BeginStage(stageStartY);
+        OnStageChanged?.Invoke(CurrentBiome, CurrentLevel);
+    }
+
+    private void TeleportPlayerToStart(Transform player)
+    {
+        Vector3 delta = startPosition - player.position;
+        player.position = startPosition;
+
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.position = startPosition;
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+
+        PlayerController controller = player.GetComponent<PlayerController>();
+        if (controller != null) controller.ResetJumps();
+
+        // Tránh camera trượt dài từ đỉnh ải cũ về điểm xuất phát
+        CinemachineVirtualCamera vcam = FindObjectOfType<CinemachineVirtualCamera>();
+        if (vcam != null) vcam.OnTargetObjectWarped(player, delta);
+    }
+
+    private void CompleteRun()
+    {
+        Debug.Log("Victory! Hoàn thành biome " + CurrentBiome.biomeName);
+        BiomeData finished = CurrentBiome;
+
+        runActive = false;
+        AwardRunCoins(true);
+        UnlockNextBiome(finished);
+        RollNextBiome();
+
+        if (GameManager.Instance != null) GameManager.Instance.Victory();
+        OnVictory?.Invoke(finished);
+    }
+
+    // Thắng biome mới nhất đang mở thì mở biome kế tiếp trong danh sách
+    private void UnlockNextBiome(BiomeData finished)
+    {
+        int index = Array.IndexOf(biomes, finished);
+        if (index < 0 || index + 1 != UnlockedBiomeCount || UnlockedBiomeCount >= biomes.Length) return;
+
+        UnlockedBiomeCount++;
+        PlayerPrefs.SetInt(UnlockedBiomeKey, UnlockedBiomeCount);
+        PlayerPrefs.Save();
+        JustUnlockedBiome = biomes[index + 1];
+    }
+
+    // Chọn biome random (trong số đã mở khóa) cho lượt chơi sau, cố tránh lặp lại biome vừa chơi
+    private void RollNextBiome()
+    {
+        if (biomes == null || biomes.Length == 0) return;
+
+        int pool = Mathf.Clamp(UnlockedBiomeCount, 1, biomes.Length);
+        BiomeData picked = biomes[UnityEngine.Random.Range(0, pool)];
+        if (pool > 1)
+        {
+            int guard = 0;
+            while (picked == CurrentBiome && guard++ < 10)
+            {
+                picked = biomes[UnityEngine.Random.Range(0, pool)];
+            }
+        }
+
+        NextBiome = picked;
+    }
+
+    private void LoadUnlockedCount()
+    {
+        int max = biomes != null ? Mathf.Max(1, biomes.Length) : 1;
+        UnlockedBiomeCount = Mathf.Clamp(PlayerPrefs.GetInt(UnlockedBiomeKey, 1), 1, max);
+    }
+
+    [ContextMenu("Reset Biome Unlocks")]
+    private void ResetBiomeUnlocks()
+    {
+        PlayerPrefs.DeleteKey(UnlockedBiomeKey);
+        UnlockedBiomeCount = 1;
+    }
+
+    private void ApplyBiome()
+    {
+        Camera cam = Camera.main;
+        if (cam != null && CurrentBiome != null)
+        {
+            cam.backgroundColor = CurrentBiome.backgroundColor;
+        }
+    }
+
+    private Transform GetPlayer()
+    {
+        if (playerTransform == null)
+        {
+            PlayerController pc = FindObjectOfType<PlayerController>();
+            if (pc != null)
+            {
+                playerTransform = pc.transform;
+                startPosition = playerTransform.position;
+            }
+        }
+        return playerTransform;
+    }
+
+    // Thua giữa chừng cũng kết thúc run: lượt sau random biome mới, về ải 1 khi reload
+    private void HandleGameStateChanged(GameState state)
+    {
+        if (state == GameState.GameOver)
+        {
+            AwardRunCoins(false);
+            runActive = false;
+            restartPending = true;
+            RollNextBiome();
+        }
+        else if (state == GameState.Playing && restartPending)
+        {
+            StartRun();
+        }
+    }
+
+    // Scene reload: player mới, camera mới → áp lại biome và điểm bắt đầu ải
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        playerTransform = null;
+        if (CurrentBiome == null) return;
+
+        ApplyBiome();
+        BeginStage(false);
+    }
+}

@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
 
     [SerializeField] private float playerRadius = 0.5f;
+    [SerializeField] private bool debugJumps = false;
     private Rigidbody2D rb;
     private LineRenderer lineRenderer;
 
@@ -32,6 +33,8 @@ public class PlayerController : MonoBehaviour
     private bool isDragging = false;
     private int remainingJumps;
     private bool isGrounded;
+    private ContactFilter2D contactFilter;
+    private readonly ContactPoint2D[] groundContacts = new ContactPoint2D[8];
 
     private void Awake()
     {
@@ -50,6 +53,12 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
+        {
+            if (isDragging) CancelDrag();
+            return;
+        }
+
         if (rb.velocity.y <= 0.1f && !isDragging && !isUnstuckRoutineRunning)
         {
             StartCoroutine(DelayedUnstuckRoutine());
@@ -58,6 +67,16 @@ public class PlayerController : MonoBehaviour
         HandleInput();
     }
 
+
+    // Pause/Victory giữa lúc đang kéo: hủy lần ngắm để không kẹt trạng thái kéo
+    private void CancelDrag()
+    {
+        isDragging = false;
+        lineRenderer.enabled = false;
+        if (rangeCircleRenderer != null) rangeCircleRenderer.enabled = false;
+        if (dragPointIndicator != null) dragPointIndicator.gameObject.SetActive(false);
+        SetSlowMotion(1f);
+    }
 
     private System.Collections.IEnumerator DelayedUnstuckRoutine()
     {
@@ -79,6 +98,11 @@ public class PlayerController : MonoBehaviour
 
         if (stuckCollider != null)
         {
+            // Nền one-way (PlatformEffector2D) cho phép bay xuyên: chỉ coi là kẹt khi đứng yên hẳn,
+            // và không hồi nhảy ở đây (hạ cánh thật sẽ được CheckGround hồi)
+            bool isOneWay = stuckCollider.usedByEffector;
+            if (isOneWay && Mathf.Abs(rb.velocity.y) > 0.5f) return;
+
             Vector3 currentPos = transform.position;
             Vector2 closestPoint = stuckCollider.ClosestPoint(currentPos);
 
@@ -93,7 +117,7 @@ public class PlayerController : MonoBehaviour
                 pushDirection.Normalize();
             }
 
-            Vector3 safePosition = currentPos + (Vector3)(pushDirection * (playerRadius * 1.1f));
+            Vector3 safePosition = currentPos + (Vector3)(pushDirection * (playerRadius * 1.2f));
 
             Collider2D doubleCheck = Physics2D.OverlapCircle(safePosition, playerRadius * 0.7f, groundLayer);
 
@@ -101,21 +125,43 @@ public class PlayerController : MonoBehaviour
             {
                 rb.MovePosition(safePosition);
                 rb.velocity = Vector2.zero;
-                ResetJumps();
+                // Chỉ hồi nhảy khi bị đẩy lên mặt đất, không hồi khi kẹt tường/trần
+                if (!isOneWay && pushDirection.y > 0.5f) ResetJumps();
             }
             else
             {
                 Vector3 emergencyPos = new Vector3(currentPos.x, closestPoint.y + (playerRadius * 1.6f), 0f);
                 rb.MovePosition(emergencyPos);
                 rb.velocity = Vector2.zero;
-                ResetJumps();
+                if (!isOneWay) ResetJumps();
             }
         }
     }
     private void CheckGround()
     {
         bool wasGrounded = isGrounded;
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+
+        contactFilter.SetLayerMask(groundLayer);
+        contactFilter.useTriggers = false;
+        int contactCount = rb.GetContacts(contactFilter, groundContacts);
+
+        isGrounded = false;
+
+        // SỬA Ở ĐÂY: Thêm điều kiện rb.velocity.y <= 0.05f để khi đang bay lên, 
+        // tuyệt đối không bị tính là chạm đất/reset lượt nhảy khi lướt qua bệ.
+        if (rb.velocity.y <= 0.05f)
+        {
+            for (int i = 0; i < contactCount; i++)
+            {
+                ContactPoint2D contact = groundContacts[i];
+                // Mặt tiếp xúc nằm ngang, nằm dưới player và không bị lún quá sâu
+                if (Mathf.Abs(contact.normal.y) > 0.5f && contact.point.y < rb.position.y && contact.separation > -0.05f)
+                {
+                    isGrounded = true;
+                    break;
+                }
+            }
+        }
 
         if (isGrounded && !wasGrounded)
         {
@@ -133,8 +179,7 @@ public class PlayerController : MonoBehaviour
             isDragging = true;
             dragStartPos = mouseWorldPos;
 
-            Time.timeScale = timeSlowFactor;
-            Time.fixedDeltaTime = 0.02f * Time.timeScale;
+            SetSlowMotion(timeSlowFactor);
 
             lineRenderer.enabled = true;
 
@@ -181,8 +226,7 @@ public class PlayerController : MonoBehaviour
             isDragging = false;
             lineRenderer.enabled = false;
 
-            Time.timeScale = 1.0f;
-            Time.fixedDeltaTime = 0.02f;
+            SetSlowMotion(1f);
 
             if (rangeCircleRenderer != null)
             {
@@ -220,6 +264,20 @@ public class PlayerController : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.AddForce(direction * launchForce, ForceMode2D.Impulse);
         remainingJumps--;
+        if (ScoreManager.Instance != null) ScoreManager.Instance.RegisterJump();
+    }
+
+    private void SetSlowMotion(float scale)
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetSlowMotion(scale);
+        }
+        else
+        {
+            Time.timeScale = scale;
+            Time.fixedDeltaTime = 0.02f * scale;
+        }
     }
 
     private void GroundSlam()
@@ -232,7 +290,28 @@ public class PlayerController : MonoBehaviour
 
     public void ResetJumps()
     {
+        if (debugJumps && remainingJumps != maxJumps)
+        {
+            Debug.Log("ResetJumps | y=" + transform.position.y + " vy=" + rb.velocity.y + " grounded=" + isGrounded + "\n" + System.Environment.StackTrace);
+        }
         remainingJumps = maxJumps;
+        // Hồi đủ lượt nhảy nghĩa là chuỗi nhảy liên tục kết thúc
+        if (ScoreManager.Instance != null) ScoreManager.Instance.ResetCombo();
+    }
+
+    public void AddExtraJump(int amount = 1)
+    {
+        remainingJumps = Mathf.Min(remainingJumps + amount, maxJumps);
+    }
+
+    // Trả về trạng thái bình thường khi chết/pause giữa lúc đang kéo
+    private void OnDisable()
+    {
+        if (isDragging)
+        {
+            isDragging = false;
+            SetSlowMotion(1f);
+        }
     }
 
 

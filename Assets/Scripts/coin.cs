@@ -1,25 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class coin : MonoBehaviour
 {
+    [SerializeField] private int points = 10;
+    [Tooltip("Loại quả, dùng cho cơ chế Fruit Challenge ở ải Speed Rush")]
+    [SerializeField] private FruitType fruitType = FruitType.Apple;
+
+    private bool collected = false;
+
+    public FruitType Type => fruitType;
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if (collected) return;
+
         if (collision.CompareTag("Player"))
         {
+            collected = true;
+            if (ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(points);
+            if (FruitChallengeManager.Instance != null) FruitChallengeManager.Instance.OnFruitCollected(fruitType);
             Destroy(gameObject);
         }
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
