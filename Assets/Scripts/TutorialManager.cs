@@ -20,6 +20,8 @@ public class TutorialManager : MonoBehaviour
 
     private readonly List<TutorialStep> activeSteps = new List<TutorialStep>();
     private TutorialStep shown;
+    // Bước đã làm xong nhưng còn hiện thêm vài giây (step, thời điểm ẩn theo unscaledTime)
+    private readonly List<KeyValuePair<TutorialStep, float>> lingering = new List<KeyValuePair<TutorialStep, float>>();
     private bool tutorialActive;
     private PlayerController player;
     private PlayerCollision playerHealth;
@@ -97,6 +99,21 @@ public class TutorialManager : MonoBehaviour
         if (GameManager.Instance != null) GameManager.Instance.OnStateChanged -= HandleStateChanged;
     }
 
+    private void Update()
+    {
+        if (lingering.Count == 0) return;
+
+        bool changed = false;
+        for (int i = lingering.Count - 1; i >= 0; i--)
+        {
+            if (Time.unscaledTime < lingering[i].Value) continue;
+            lingering.RemoveAt(i);
+            changed = true;
+        }
+
+        if (changed) Refresh();
+    }
+
     // ---------------------------------------------------------------- Vùng trigger
 
     public void EnterStep(TutorialStep step)
@@ -137,8 +154,10 @@ public class TutorialManager : MonoBehaviour
         {
             if (activeSteps[i].Action != action) continue;
 
-            activeSteps[i].MarkCompleted();
+            TutorialStep done = activeSteps[i];
+            done.MarkCompleted();
             activeSteps.RemoveAt(i);
+            if (done.LingerSeconds > 0f) lingering.Add(new KeyValuePair<TutorialStep, float>(done, Time.unscaledTime + done.LingerSeconds));
             changed = true;
         }
 
@@ -151,6 +170,7 @@ public class TutorialManager : MonoBehaviour
     {
         tutorialActive = RunManager.Instance != null && RunManager.Instance.IsTutorial;
         activeSteps.Clear();
+        lingering.Clear();
         Refresh();
     }
 
@@ -171,6 +191,9 @@ public class TutorialManager : MonoBehaviour
         {
             if (shown == null || step.Order < shown.Order) shown = step;
         }
+
+        // Chưa có bước nào đang chờ thì hiện nốt bước vừa xong (đang nán lại)
+        if (shown == null && lingering.Count > 0) shown = lingering[lingering.Count - 1].Key;
 
         bool playing = GameManager.Instance == null || GameManager.Instance.IsPlaying;
 
