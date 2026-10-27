@@ -77,7 +77,8 @@ public class FruitChallengeManager : MonoBehaviour
         level = newLevel;
         needs.Clear();
         RoundsCompleted = 0;
-        IsActive = level != null && level.fruitChallengeEnabled;
+        IsActive = level != null && level.fruitChallengeEnabled
+                   && !(RunManager.Instance != null && RunManager.Instance.IsTutorial);
 
         if (IsActive) StartRound();
         else OnRoundChanged?.Invoke();

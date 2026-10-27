@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class RunManager : MonoBehaviour
 {
     private const string UnlockedBiomeKey = "Biome_UnlockedCount";
+    public const string TutorialDoneKey = "TutorialDone";
 
     public static RunManager Instance { get; private set; }
 
@@ -17,6 +18,10 @@ public class RunManager : MonoBehaviour
     [Tooltip("Tự chuyển ải khi player đạt targetHeight (ngoài cách chui qua Portal)")]
     [SerializeField] private bool autoAdvanceByHeight = false;
     [SerializeField] private float advanceCooldown = 0.5f;
+
+    [Header("Tutorial")]
+    [Tooltip("Ải hướng dẫn riêng (KHÔNG nằm trong BiomeData.levels). Trống hoặc chưa có terrainPrefab = bỏ qua Tutorial")]
+    [SerializeField] private LevelConfig tutorialLevel;
 
     [Header("Terrain")]
     [Tooltip("Tên object gốc trong scene chứa địa hình mặc định, dùng cho ải không có terrainPrefab (bị ẩn khi ải dùng prefab)")]
@@ -36,9 +41,11 @@ public class RunManager : MonoBehaviour
     private bool restartPending;
     private bool timedOut;
     private bool rewardGiven;
+    private bool hasCheckpoint;
+    private Vector3 checkpointPosition;
 
     public float StageTimeRemaining { get; private set; }
-    public bool HasTimeLimit => CurrentLevel != null && CurrentLevel.timeLimit > 0f;
+    public bool HasTimeLimit => !IsTutorial && CurrentLevel != null && CurrentLevel.timeLimit > 0f;
     // Fruit Coins nhận được ở cuối run gần nhất (đã nhân ×2 nếu thắng)
     public int LastRunReward { get; private set; }
 
@@ -47,7 +54,13 @@ public class RunManager : MonoBehaviour
     public BiomeData CurrentBiome { get; private set; }
     public BiomeData NextBiome { get; private set; }
     public BiomeData JustUnlockedBiome { get; private set; }
-    public LevelConfig CurrentLevel => CurrentBiome != null ? CurrentBiome.GetLevel(CurrentStageIndex) : null;
+    public LevelConfig CurrentLevel => IsTutorial ? tutorialLevel : (CurrentBiome != null ? CurrentBiome.GetLevel(CurrentStageIndex) : null);
+    // Đang ở ải Tutorial: không đếm giờ, không spawn ngẫu nhiên, không tính điểm/coin/run, chết thì về checkpoint
+    public bool IsTutorial { get; private set; }
+    public bool HasTutorial => tutorialLevel != null && tutorialLevel.terrainPrefab != null;
+    public static bool IsTutorialDone => PlayerPrefs.GetInt(TutorialDoneKey, 0) == 1;
+    // Lần đầu bấm "1 người": vào Tutorial nếu chưa xong và đã có ải Tutorial hợp lệ
+    public bool ShouldPlayTutorial => HasTutorial && !IsTutorialDone;
     public float StageStartX => stageStartX;
     public float StageStartY => stageStartY;
     // Terrain của ải có child StartPoint / PortalPoint hay không
@@ -142,7 +155,7 @@ public class RunManager : MonoBehaviour
     // Phá đảo 4 ải: nhận ×2 Fruit Coins toàn trận. Thất bại: giữ 100% số coin đã nhặt
     private void AwardRunCoins(bool victory)
     {
-        if (rewardGiven) return;
+        if (rewardGiven || IsTutorial) return;
         rewardGiven = true;
 
         int coins = ScoreManager.Instance != null ? ScoreManager.Instance.FruitCoins : 0;
@@ -177,6 +190,69 @@ public class RunManager : MonoBehaviour
         BeginRun(true);
     }
 
+    // Vào ải Tutorial (chưa chạy game: gọi GameManager.StartGame() sau đó). Không phải 1 run: runActive = false
+    public bool StartTutorial()
+    {
+        if (!HasTutorial)
+        {
+            Debug.LogWarning("RunManager: chưa gán tutorialLevel (hoặc LevelConfig chưa có terrainPrefab) → không vào Tutorial.");
+            return false;
+        }
+
+        IsTutorial = true;
+        runActive = false;
+        restartPending = false;
+        JustUnlockedBiome = null;
+        CurrentStageIndex = 0;
+        if (CurrentBiome == null && biomes != null && biomes.Length > 0) CurrentBiome = biomes[0];
+
+        ApplyBiome();
+        BeginStage(true);
+        ResetPlayerState();
+        return true;
+    }
+
+    // Qua Portal của Tutorial hoặc bấm "Bỏ qua": đánh dấu đã xong rồi bắt đầu run bình thường (biome đầu, ải 1)
+    public void SkipTutorial()
+    {
+        if (IsTutorial) CompleteTutorial();
+    }
+
+    private void CompleteTutorial()
+    {
+        PlayerPrefs.SetInt(TutorialDoneKey, 1);
+        PlayerPrefs.Save();
+
+        IsTutorial = false;
+        BeginRun(true);
+        ResetPlayerState();
+    }
+
+    // Tutorial không được để lại điểm hay máu bị trừ sang run thật
+    private void ResetPlayerState()
+    {
+        Transform player = GetPlayer();
+        PlayerCollision health = player != null ? player.GetComponent<PlayerCollision>() : null;
+        if (health != null) health.RestoreFullHealth();
+        if (ScoreManager.Instance != null) ScoreManager.Instance.ResetScore();
+    }
+
+    public void SetCheckpoint(Vector3 position)
+    {
+        hasCheckpoint = true;
+        checkpointPosition = position;
+    }
+
+    // Tutorial: đưa player về checkpoint gần nhất đã đi qua (không có thì StartPoint), reset vận tốc + lượt nhảy
+    public void RespawnPlayerAtCheckpoint()
+    {
+        Transform player = GetPlayer();
+        if (player == null) return;
+
+        Vector3 target = hasCheckpoint ? checkpointPosition : (terrain.StartPoint != null ? terrain.StartPoint.position : startPosition);
+        TeleportPlayerToStart(player, target);
+    }
+
     private void BeginRun(bool teleportPlayer)
     {
         if (biomes == null || biomes.Length == 0)
@@ -185,6 +261,7 @@ public class RunManager : MonoBehaviour
             return;
         }
 
+        IsTutorial = false;
         CurrentBiome = NextBiome != null ? NextBiome : biomes[0];
         NextBiome = null;
         JustUnlockedBiome = null;
@@ -203,6 +280,14 @@ public class RunManager : MonoBehaviour
     // Gọi khi đạt độ cao hoặc chui qua Portal
     public void LoadNextStage()
     {
+        if (IsTutorial)
+        {
+            if (Time.unscaledTime - lastAdvanceTime < advanceCooldown) return;
+            lastAdvanceTime = Time.unscaledTime;
+            CompleteTutorial();
+            return;
+        }
+
         if (CurrentBiome == null || !runActive) return;
         if (Time.unscaledTime - lastAdvanceTime < advanceCooldown) return;
         lastAdvanceTime = Time.unscaledTime;
@@ -234,6 +319,7 @@ public class RunManager : MonoBehaviour
         stageStartX = start.x;
         stageStartY = (player != null || terrain.StartPoint != null) ? start.y : 0f;
 
+        hasCheckpoint = false;
         timedOut = false;
         StageTimeRemaining = HasTimeLimit ? CurrentLevel.timeLimit : 0f;
 

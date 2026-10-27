@@ -9,12 +9,15 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private Button singlePlayerButton;
     [SerializeField] private Button twoPlayerButton;
+    [Tooltip("Chơi lại ải Tutorial bất cứ lúc nào")]
+    [SerializeField] private Button tutorialButton;
 
     private static readonly Color DisabledColor = new Color(0.5f, 0.5f, 0.5f, 1f);
 
     private void Start()
     {
         if (singlePlayerButton != null) singlePlayerButton.onClick.AddListener(OnSinglePlayerClicked);
+        if (tutorialButton != null) tutorialButton.onClick.AddListener(OnTutorialClicked);
 
         // Chế độ 2 người chưa có: khóa nút, đổi xám
         if (twoPlayerButton != null)
@@ -55,9 +58,25 @@ public class MainMenuUI : MonoBehaviour
         if (gm != null)
         {
             gm.SelectMode(GameMode.SinglePlayer);
+
+            // Lần đầu (chưa có TutorialDone): vào Tutorial thay vì ải 1; Tutorial xong thì RunManager tự bắt đầu run thường
+            RunManager run = RunManager.Instance;
+            if (run != null && run.ShouldPlayTutorial) run.StartTutorial();
+
             gm.StartGame();   // state → Playing, HandleStateChanged ẩn panel
         }
 
+        SetVisible(false);
+    }
+
+    private void OnTutorialClicked()
+    {
+        GameManager gm = GameManager.Instance;
+        RunManager run = RunManager.Instance;
+        if (gm == null || run == null || !run.StartTutorial()) return;
+
+        gm.SelectMode(GameMode.SinglePlayer);
+        gm.StartGame();
         SetVisible(false);
     }
 }

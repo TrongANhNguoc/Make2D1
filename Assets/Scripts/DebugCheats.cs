@@ -39,6 +39,14 @@ public class DebugCheats : MonoBehaviour
             else GameManager.Instance.PauseGame();
         }
 
+        // Xóa cờ Tutorial đã xong: dừng Play rồi Play lại → "1 người" sẽ vào Tutorial từ đầu
+        if (Input.GetKeyDown(KeyCode.F11))
+        {
+            PlayerPrefs.DeleteKey(RunManager.TutorialDoneKey);
+            PlayerPrefs.Save();
+            Debug.Log("DebugCheats: đã xóa TutorialDone. Dừng Play rồi Play lại để vào Tutorial từ đầu.");
+        }
+
         // Xóa toàn bộ save (ví + biome đã mở). Dừng Play rồi Play lại để có hiệu lực
         if (Input.GetKeyDown(KeyCode.F12))
         {
@@ -57,9 +65,10 @@ public class DebugCheats : MonoBehaviour
         FruitChallengeManager fc = FruitChallengeManager.Instance;
 
         string info = "[DEBUG]  N: next stage | T: tới Portal | H: -1 máu | K: chết | R: hồi sinh ngay\n"
-                    + "C: +10 coin | X: +100 điểm | P: pause | F12: xóa save\n";
+                    + "C: +10 coin | X: +100 điểm | P: pause | F11: xóa TutorialDone | F12: xóa save\n";
         if (gm != null) info += "State: " + gm.CurrentState + "  timeScale: " + Time.timeScale.ToString("0.00") + "\n";
-        if (run != null && run.CurrentBiome != null && run.CurrentLevel != null)
+        if (run != null && run.IsTutorial) info += "TUTORIAL  (TutorialDone: " + RunManager.IsTutorialDone + ")\n";
+        else if (run != null && run.CurrentBiome != null && run.CurrentLevel != null)
         {
             info += "Biome: " + run.CurrentBiome.name + "  Ải " + (run.CurrentStageIndex + 1)
                   + " (" + run.CurrentLevel.stageType + ")  TargetY: " + run.TargetY.ToString("0")

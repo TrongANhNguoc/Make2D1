@@ -3,9 +3,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// Menu Tools → Make2D1 → Create Terrain Prefab From Selection: chọn Grid (hoặc Tilemap con) trong scene →
-// lưu thành prefab ở Assets/Terrain/ và tự thêm StartPoint / PortalPoint / CameraBounds nếu thiếu.
-// Làm việc trên bản copy nên scene gốc không bị đổi.
 public static class CreateTerrainPrefab
 {
     private const string Folder = "Assets/Terrain";

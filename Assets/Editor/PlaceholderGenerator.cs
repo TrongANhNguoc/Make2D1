@@ -6,9 +6,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// Sinh tự động bộ placeholder P0 (Player, quái, quả, Fruit Coin, checkpoint, vực) theo mục
-// "Quy trình Asset Placeholder" trong CLAUDE.md.
-// Menu: Make2D1 → Placeholders. Bản thường KHÔNG ghi đè asset đã có (giữ art đã swap).
 public static class PlaceholderGenerator
 {
     private const string Root = "Assets/Art/Placeholders";
@@ -17,7 +14,6 @@ public static class PlaceholderGenerator
     private const string PrefabDir = Root + "/Prefabs";
     private const string LogFile = "Assets/Art/PLACEHOLDERS.md";
 
-    // Pixels Per Unit tạm thời, đổi theo Art Bible khi chốt (PNG 100x100 = 1 unit).
     private const int PPU = 100;
 
     private static bool overwrite;
@@ -51,7 +47,6 @@ public static class PlaceholderGenerator
         controllerCache.Clear();
         if (overwrite && File.Exists(LogFile)) File.Delete(LogFile);
 
-        // Sprite phải import xong (đồng bộ) trước khi prefab/clip tham chiếu.
         CreateSprites();
         AssetDatabase.Refresh();
 
@@ -68,7 +63,6 @@ public static class PlaceholderGenerator
         Debug.Log("[Placeholder] Hoàn tất. Xem " + LogFile);
     }
 
-    // ---------------------------------------------------------------- Sprites
 
     private struct FruitSpec
     {
@@ -92,11 +86,9 @@ public static class PlaceholderGenerator
         Color outline = new Color(0.08f, 0.08f, 0.10f, 1f);
         Vector2 center = new Vector2(0.5f, 0.5f);
 
-        // Player P1/P2: hình tròn, khác màu chính để nhận ra ngay.
         WriteSprite("PH_Player_P1", 100, 100, Circle(50), new Color(0.25f, 0.55f, 1f), outline, center, Vector4.zero);
         WriteSprite("PH_Player_P2", 100, 100, Circle(50), new Color(1f, 0.55f, 0.20f), outline, center, Vector4.zero);
 
-        // Quái: vuông bo góc đỏ.
         WriteSprite("PH_Enemy", 100, 100, RoundRect(100, 100, 14), new Color(0.85f, 0.15f, 0.20f), outline, center, Vector4.zero);
 
         foreach (FruitSpec f in Fruits)
@@ -107,17 +99,14 @@ public static class PlaceholderGenerator
             WriteSprite("PH_Fruit_" + f.type, w, h, shape, f.color, outline, center, Vector4.zero);
         }
 
-        // Fruit Coin: sprite trong thế giới + icon HUD (có thể thay độc lập).
         Color gold = new Color(1f, 0.82f, 0.15f);
         WriteSprite("PH_FruitCoin", 64, 64, Circle(32), gold, outline, center, Vector4.zero);
         WriteSprite("PH_FruitCoin_Icon", 64, 64, Circle(32), gold, outline, center, Vector4.zero);
 
-        // Checkpoint: cột, pivot đáy. 2 trạng thái.
         Vector2 bottom = new Vector2(0.5f, 0f);
         WriteSprite("PH_Checkpoint_Inactive", 60, 160, RoundRect(60, 160, 10), new Color(0.6f, 0.6f, 0.6f), outline, bottom, Vector4.zero);
         WriteSprite("PH_Checkpoint_Active", 60, 160, RoundRect(60, 160, 10), new Color(0.25f, 0.85f, 0.35f), outline, bottom, Vector4.zero);
 
-        // Vực/vùng nguy hiểm: đỏ trong suốt, có border 9-slice để kéo giãn không méo viền.
         WriteSprite("PH_Hazard", 64, 64, RoundRect(64, 64, 4), new Color(0.95f, 0.1f, 0.1f, 0.5f),
             new Color(0.95f, 0.1f, 0.1f, 1f), center, new Vector4(8, 8, 8, 8));
     }
@@ -186,13 +175,12 @@ public static class PlaceholderGenerator
         return AssetDatabase.LoadAssetAtPath<Sprite>(SpriteDir + "/" + name + ".png");
     }
 
-    // ------------------------------------------------------------- Animators
 
     private enum Kind
     {
-        Loop,   // lặp, nhịp thở quanh scale đích
-        Return, // chạy 1 lần rồi về Idle
-        Hold    // giữ ở trạng thái cuối
+        Loop, 
+        Return,
+        Hold  
     }
 
     private struct StateSpec
@@ -234,7 +222,7 @@ public static class PlaceholderGenerator
 
     private static readonly StateSpec[] FruitStates =
     {
-        new StateSpec("Idle", Kind.Loop, 0.25f, 1f), // "xoay" giả bằng thu hẹp trục X
+        new StateSpec("Idle", Kind.Loop, 0.25f, 1f),
         new StateSpec("Collect", Kind.Hold, 1.5f, 1.5f),
     };
 
@@ -303,8 +291,6 @@ public static class PlaceholderGenerator
         return controller;
     }
 
-    // Clip chỉ animate localScale của child "Visual" (không đụng sprite/màu) nên swap sprite
-    // bằng cách kéo-thả vào Visual vẫn hoạt động. Art thật chỉ cần thay clip.
     private static AnimationClip MakeScaleClip(string path, StateSpec s)
     {
         AnimationClip clip = new AnimationClip { name = Path.GetFileNameWithoutExtension(path) };
@@ -367,7 +353,7 @@ public static class PlaceholderGenerator
         return controller;
     }
 
-    // Checkpoint đổi hình theo trạng thái nên clip phải key sprite; art thật thay sprite trong clip.
+
     private static AnimationClip MakeSpriteClip(string path, Sprite sprite)
     {
         AnimationClip clip = new AnimationClip { name = Path.GetFileNameWithoutExtension(path) };
@@ -383,7 +369,7 @@ public static class PlaceholderGenerator
         return clip;
     }
 
-    // ---------------------------------------------------------------- Prefabs
+
 
     private static GameObject NewEntity(string name, Sprite sprite, string sortingLayer, int order,
         RuntimeAnimatorController controller)
@@ -409,7 +395,6 @@ public static class PlaceholderGenerator
         return child;
     }
 
-    // Trả về asset prefab; nếu đã tồn tại và không ghi đè thì giữ nguyên.
     private static GameObject Save(GameObject root, string name, string spriteNote, string artNote)
     {
         string path = PrefabDir + "/" + name + ".prefab";
@@ -524,7 +509,6 @@ public static class PlaceholderGenerator
             "64x64px, border 8px, Draw Mode Sliced/Tiled; đổi kích thước bằng SpriteRenderer.size + BoxCollider2D.size");
     }
 
-    // ------------------------------------------------------------------ Misc
 
     private static void WriteLog()
     {

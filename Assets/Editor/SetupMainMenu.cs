@@ -4,9 +4,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Menu Tools → Make2D1 → Setup Main Menu: dựng MainMenuPanel (tiêu đề + 2 nút) trong Canvas, thêm MainMenuUI,
-// đặt GameManager.startState = Menu và thêm nút "Về menu" vào VictoryPanel (nếu có VictoryUI).
-// Chạy lại nhiều lần an toàn: dùng lại object cùng tên, bố cục chỉ áp dụng cho object mới tạo.
 public static class SetupMainMenu
 {
     private static readonly Color DisabledColor = new Color(0.5f, 0.5f, 0.5f, 1f);
@@ -23,7 +20,6 @@ public static class SetupMainMenu
 
         SetStartStateToMenu();
 
-        // Host luôn active chứa MainMenuUI (không phải panel, vì panel bị ẩn)
         MainMenuUI menuUI = Object.FindObjectOfType<MainMenuUI>(true);
         GameObject host;
         if (menuUI != null)
@@ -37,7 +33,6 @@ public static class SetupMainMenu
             menuUI = Undo.AddComponent<MainMenuUI>(host);
         }
 
-        // Panel phủ toàn màn hình, nền đặc để che mọi UI khác
         GameObject panel = SetupGameUI.GetOrCreateUI("MainMenuPanel", canvas.transform, out bool panelNew, typeof(Image));
         if (panelNew)
         {
@@ -51,11 +46,9 @@ public static class SetupMainMenu
         Button single = SetupDeathUI.GetOrCreateButton("SinglePlayerButton", panel.transform, "1 NGƯỜI CHƠI", new Vector2(0f, 60f));
         Button two = SetupDeathUI.GetOrCreateButton("TwoPlayerButton", panel.transform, "2 NGƯỜI CHƠI", new Vector2(0f, -120f));
 
-        // Chế độ 2 người chưa có: khóa nút + xám
         two.interactable = false;
         if (two.targetGraphic != null) two.targetGraphic.color = DisabledColor;
 
-        // Dòng "Sắp ra mắt" đã bỏ: xóa bản cũ nếu scene còn
         Transform oldLabel = panel.transform.Find("ComingSoonText");
         if (oldLabel != null)
         {
@@ -63,10 +56,8 @@ public static class SetupMainMenu
             SetupGameUI.log.Add("Đã xóa ComingSoonText");
         }
 
-        // Ẩn sẵn trong scene; lúc chạy MainMenuUI tự hiện khi state = Menu
         if (panelNew) panel.SetActive(false);
 
-        // Đặt trên cùng Canvas để che mọi UI khác
         Undo.RegisterFullObjectHierarchyUndo(canvas.gameObject, "Reorder Main Menu");
         panel.transform.SetAsLastSibling();
 
@@ -104,7 +95,6 @@ public static class SetupMainMenu
         SetupGameUI.log.Add("GameManager (" + gm.name + "): startState = Menu");
     }
 
-    // Nút "Về menu" (tùy chọn) trong VictoryPanel
     private static void SetupBackToMenuButton()
     {
         VictoryUI victory = Object.FindObjectOfType<VictoryUI>(true);

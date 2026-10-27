@@ -4,8 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Menu Tools → Make2D1 → Setup Pause UI: dựng PausePanel (tiêu đề + nút Tiếp tục / Thoát), thêm PauseUI vào scene
-// rồi gán các trường. Chạy lại nhiều lần an toàn (dùng lại object cùng tên).
+
 public static class SetupPauseUI
 {
     [MenuItem("Tools/Make2D1/Setup Pause UI")]

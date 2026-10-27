@@ -7,9 +7,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// Menu Tools → Make2D1 → Setup Game UI: dựng UI cho VictoryUI / GameHUD / RoundTimerUI trong scene đang mở
-// và gán các trường [SerializeField] còn trống. Chạy lại nhiều lần an toàn: object cùng tên được dùng lại,
-// bố cục chỉ áp dụng cho object mới tạo (không ghi đè chỉnh sửa tay), còn việc gán trường luôn được làm lại.
 public static class SetupGameUI
 {
     internal static readonly List<string> log = new List<string>();
@@ -34,7 +31,6 @@ public static class SetupGameUI
         Debug.Log("[SetupGameUI] Hoàn tất:\n- " + string.Join("\n- ", log) + "\nNhớ lưu scene (Ctrl+S).");
     }
 
-    // ---------------------------------------------------------------- Canvas / EventSystem
 
     internal static Canvas GetOrCreateCanvas()
     {
@@ -71,7 +67,6 @@ public static class SetupGameUI
         log.Add("Tạo mới EventSystem (StandaloneInputModule - Input legacy)");
     }
 
-    // ---------------------------------------------------------------- VictoryUI
 
     private static void SetupVictoryUI(Canvas canvas)
     {
@@ -117,10 +112,8 @@ public static class SetupGameUI
             rt => Stretch(rt), false);
         if (panelNew) buttonLabel.color = Color.black;
 
-        // Panel ẩn sẵn (chỉ khi mới tạo, để không tắt panel mà bạn đang chỉnh)
         if (panelNew) panel.SetActive(false);
 
-        // Object chứa VictoryUI phải luôn active, không được là panel hay con của panel
         if (victory.gameObject == panel || victory.transform.IsChildOf(panel.transform))
             Debug.LogWarning("[SetupGameUI] VictoryUI đang nằm trên VictoryPanel (hoặc con của nó). Panel bị ẩn thì script cũng ngừng chạy → hãy chuyển VictoryUI sang object luôn active (vd. Canvas).");
         else if (!victory.gameObject.activeInHierarchy)
@@ -136,7 +129,6 @@ public static class SetupGameUI
         log.Add("VictoryUI (" + victory.name + "): gán panel, titleText, scoreText, nextBiomeText, playAgainButton");
     }
 
-    // ---------------------------------------------------------------- GameHUD
 
     private static void SetupGameHUD(Canvas canvas)
     {
@@ -150,7 +142,6 @@ public static class SetupGameUI
         Transform parent = canvas.transform;
         Vector2 topLeft = new Vector2(0f, 1f), topRight = new Vector2(1f, 1f), topCenter = new Vector2(0.5f, 1f);
 
-        // Canvas tham chiếu 1080 rộng: Score/Combo (trái) rộng 300, Stage/Timer (giữa) 400, Wallet (phải) 300 → không chồng nhau
         TextMeshProUGUI score = GetOrCreateText("ScoreText", parent, "Score: 0", 44, TextAlignmentOptions.TopLeft,
             rt => Place(rt, topLeft, new Vector2(30f, -30f), new Vector2(300f, 60f)), true);
         TextMeshProUGUI combo = GetOrCreateText("ComboText", parent, "x1.0", 36, TextAlignmentOptions.TopLeft,
@@ -175,7 +166,6 @@ public static class SetupGameUI
         log.Add("GameHUD (" + hud.name + "): gán scoreText, comboText, walletText, timerText, stageText, challengeText");
     }
 
-    // ---------------------------------------------------------------- RoundTimerUI
 
     private static void SetupRoundTimerUI()
     {
@@ -212,7 +202,6 @@ public static class SetupGameUI
         TextMeshProUGUI seconds = GetOrCreateText("SecondsText", root.transform, "10", 64, TextAlignmentOptions.Center,
             rt => Place(rt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160f, 160f)), true);
 
-        // Đảm bảo số giây vẽ sau (đè lên) hình tròn
         seconds.transform.SetAsLastSibling();
 
         Assign(so, "clockFill", fill);
@@ -221,9 +210,7 @@ public static class SetupGameUI
         log.Add("RoundTimerUI (" + timerUI.name + "): gán clockFill, secondsText (con của root '" + root.name + "', giữ nguyên root)");
     }
 
-    // ---------------------------------------------------------------- Helpers
 
-    // Tìm con trực tiếp theo tên (kể cả đang inactive) hoặc tạo mới; bảo đảm có đủ component yêu cầu
     internal static GameObject GetOrCreateUI(string name, Transform parent, out bool created, params System.Type[] components)
     {
         Transform existing = parent.Find(name);
@@ -281,7 +268,6 @@ public static class SetupGameUI
         rt.offsetMax = Vector2.zero;
     }
 
-    // Anchor = pivot = anchor point (góc/cạnh/tâm), pos tính từ anchor đó
     internal static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
     {
         rt.anchorMin = anchor;

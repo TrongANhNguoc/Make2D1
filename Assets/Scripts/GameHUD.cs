@@ -125,8 +125,9 @@ public class GameHUD : MonoBehaviour
 
     private void UpdateStage(BiomeData biome, LevelConfig level)
     {
-        if (stageText == null || biome == null || level == null) return;
-        stageText.text = biome.biomeName + " - Ải " + level.stageIndex;
+        bool tutorial = RunManager.Instance != null && RunManager.Instance.IsTutorial;
+        if (stageText == null || (!tutorial && (biome == null || level == null))) return;
+        stageText.text = tutorial ? "Hướng dẫn" : biome.biomeName + " - Ải " + level.stageIndex;
 
         if (stageBannerRoutine != null) StopCoroutine(stageBannerRoutine);
         stageBannerRoutine = StartCoroutine(ShowStageBanner());

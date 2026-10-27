@@ -19,8 +19,8 @@ MonoBehaviour:
   bossPrefab: {fileID: 0}
   terrainPrefab: {fileID: 9140894986951114470, guid: 573571b2847a34e45b9f69d4e2a4eb5f, type: 3}
   overrideSpawnX: 0
-  spawnMinX: -4
-  spawnMaxX: 4
+  spawnMinX: -8
+  spawnMaxX: 8
   fruitChallengeEnabled: 1
   fruitRoundTime: 10
   fruitTypesPerRound: 3

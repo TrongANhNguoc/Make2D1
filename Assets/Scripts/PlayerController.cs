@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -37,6 +38,14 @@ public class PlayerController : MonoBehaviour
     private ContactFilter2D contactFilter;
     private readonly ContactPoint2D[] groundContacts = new ContactPoint2D[8];
 
+    public bool IsGrounded => isGrounded;
+    public int RemainingJumps => remainingJumps;
+
+    // Bắn (tham số: lúc bắn đang đứng trên đất hay đã ở trên không) — TutorialManager lắng nghe
+    public event Action<bool> OnLaunched;
+    public event Action OnGroundSlam;
+    public event Action OnLanded;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -70,7 +79,7 @@ public class PlayerController : MonoBehaviour
 
 
     // Pause/Victory giữa lúc đang kéo: hủy lần ngắm để không kẹt trạng thái kéo
-    private void CancelDrag()
+    public void CancelDrag()
     {
         isDragging = false;
         lineRenderer.enabled = false;
@@ -166,6 +175,7 @@ public class PlayerController : MonoBehaviour
 
         if (isGrounded && !wasGrounded)
         {
+            OnLanded?.Invoke();
             ResetJumps();
         }
     }
@@ -269,6 +279,7 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(direction * launchForce, ForceMode2D.Impulse);
         remainingJumps--;
         if (ScoreManager.Instance != null) ScoreManager.Instance.RegisterJump();
+        OnLaunched?.Invoke(isGrounded);
     }
 
     private void SetSlowMotion(float scale)
@@ -289,6 +300,7 @@ public class PlayerController : MonoBehaviour
         if (!isGrounded)
         {
             rb.velocity = new Vector2(0f, -slamForce);
+            OnGroundSlam?.Invoke();
         }
     }
 

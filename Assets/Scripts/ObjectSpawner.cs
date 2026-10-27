@@ -84,6 +84,14 @@ public class ObjectSpawner : MonoBehaviour
         RunManager run = RunManager.Instance;
         LevelConfig level = run != null ? run.CurrentLevel : null;
 
+        // Tutorial: mọi vật thể (quái/quả/bẫy) đặt cố định trong prefab terrain, không sinh ngẫu nhiên/boss/bẫy cố định
+        if (run != null && run.IsTutorial)
+        {
+            nextSpawnY = 0f;
+            spawnLimitY = float.NegativeInfinity;
+            return;
+        }
+
         // Mỗi map rộng khác nhau nên ải có thể override vùng spawn ngang
         bool overrideX = level != null && level.overrideSpawnX;
         currentMinX = overrideX ? Mathf.Min(level.spawnMinX, level.spawnMaxX) : minX;

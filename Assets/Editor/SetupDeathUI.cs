@@ -4,9 +4,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Menu Tools → Make2D1 → Setup Death UI: dựng DeathPanel (tiêu đề + 2 nút) và VideoPanel trắng đếm ngược,
-// thêm DeathUI + FakeRewardedAd vào scene rồi gán các trường. Chạy lại nhiều lần an toàn (dùng lại object cùng tên;
-// bố cục chỉ áp dụng cho object mới tạo, việc gán trường luôn làm lại).
 public static class SetupDeathUI
 {
     [MenuItem("Tools/Make2D1/Setup Death UI")]
@@ -19,7 +16,6 @@ public static class SetupDeathUI
         Canvas canvas = SetupGameUI.GetOrCreateCanvas();
         SetupGameUI.EnsureEventSystem();
 
-        // Host luôn active: giữ DeathUI + FakeRewardedAd (không phải panel, vì panel bị ẩn)
         DeathUI deathUI = Object.FindObjectOfType<DeathUI>(true);
         GameObject host;
         if (deathUI != null)
@@ -36,7 +32,6 @@ public static class SetupDeathUI
         FakeRewardedAd ad = host.GetComponent<FakeRewardedAd>();
         if (ad == null) ad = Undo.AddComponent<FakeRewardedAd>(host);
 
-        // Panel chết
         GameObject panel = SetupGameUI.GetOrCreateUI("DeathPanel", canvas.transform, out bool panelNew, typeof(Image));
         if (panelNew)
         {
@@ -70,7 +65,6 @@ public static class SetupDeathUI
 
         if (videoNew) video.SetActive(false);
 
-        // Gán trường private
         SerializedObject soDeath = new SerializedObject(deathUI);
         SetupGameUI.Assign(soDeath, "panel", panel);
         SetupGameUI.Assign(soDeath, "reviveButton", reviveButton);

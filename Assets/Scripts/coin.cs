@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class coin : MonoBehaviour
@@ -10,6 +11,9 @@ public class coin : MonoBehaviour
 
     public FruitType Type => fruitType;
 
+    // Bắn khi Player ăn quả — TutorialManager lắng nghe (static: quả là prefab sinh động, không có reference sẵn)
+    public static event Action<FruitType> OnCollected;
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collected) return;
@@ -19,6 +23,7 @@ public class coin : MonoBehaviour
             collected = true;
             if (ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(points);
             if (FruitChallengeManager.Instance != null) FruitChallengeManager.Instance.OnFruitCollected(fruitType);
+            OnCollected?.Invoke(fruitType);
             Destroy(gameObject);
         }
     }

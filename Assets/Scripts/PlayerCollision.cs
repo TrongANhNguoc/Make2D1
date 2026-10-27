@@ -47,6 +47,12 @@ public class PlayerCollision : MonoBehaviour
     // (máu hiện tại, máu tối đa) — HeartsUI đăng ký để vẽ trái tim
     public event Action<int, int> OnHealthChanged;
 
+    // TutorialManager lắng nghe: giẫm quái thành công / bị mất máu (kể cả chết ngay ở Tutorial)
+    public event Action OnEnemyStomped;
+    public event Action OnDamaged;
+
+    private bool IsTutorialRun => RunManager.Instance != null && RunManager.Instance.IsTutorial;
+
     private void Awake()
     {
         currentHealth = maxHealth;
@@ -123,6 +129,7 @@ public class PlayerCollision : MonoBehaviour
                 playerController.AddExtraJump(1);
                 if (ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(enemyKillPoints);
                 Destroy(collision.gameObject);
+                OnEnemyStomped?.Invoke();
             }
             else
             {
@@ -137,6 +144,7 @@ public class PlayerCollision : MonoBehaviour
 
         currentHealth -= damage;
         UpdateHealthUI();
+        OnDamaged?.Invoke();
         if (currentHealth <= 0)
         {
             Die();
@@ -146,12 +154,45 @@ public class PlayerCollision : MonoBehaviour
     // Chết ngay (vd. hết giờ ải Speed Rush, KillZone). Bị bỏ qua khi đang bất tử
     public void Kill()
     {
+        // Tutorial: dung nham/KillZone luôn đưa về checkpoint, không phụ thuộc bất tử
+        if (IsTutorialRun && !isDead)
+        {
+            OnDamaged?.Invoke();
+            RespawnInTutorial();
+            return;
+        }
+
         TakeDamage(currentHealth);
+    }
+
+    // Dùng khi rời Tutorial: máu đầy trở lại để không mang tim bị trừ sang run thật
+    public void RestoreFullHealth()
+    {
+        currentHealth = maxHealth;
+        UpdateHealthUI();
+    }
+
+    // Tutorial: không DeathUI / không Dead state — hồi đầy máu, về checkpoint, reset lượt nhảy, bất tử ngắn
+    private void RespawnInTutorial()
+    {
+        RestoreFullHealth();
+        playerController.CancelDrag();
+
+        if (RunManager.Instance != null) RunManager.Instance.RespawnPlayerAtCheckpoint();
+
+        invincibleTimer = invincibleSeconds;
+        blinkTimer = 0f;
     }
 
     // Hết máu: dừng game ở state Dead và chờ DeathUI (Chơi lại / Xem video hồi sinh)
     private void Die()
     {
+        if (IsTutorialRun)
+        {
+            RespawnInTutorial();
+            return;
+        }
+
         isDead = true;
         deathPosition = transform.position;
         playerCollider.enabled = false;
