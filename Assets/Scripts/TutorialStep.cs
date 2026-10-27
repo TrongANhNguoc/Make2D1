@@ -21,10 +21,8 @@ public class TutorialStep : MonoBehaviour
     [TextArea(2, 4)] [SerializeField] private string message;
     [SerializeField] private Sprite icon;
 
-    [Tooltip("Sau khi làm đúng, gợi ý vẫn hiện thêm bấy nhiêu giây (thời gian thật) rồi mới ẩn, để kịp đọc. 0 = ẩn ngay")]
     [SerializeField] private float lingerSeconds = 1.5f;
 
-    [Tooltip("Làm xong vẫn hiện lại mỗi lần player rời vùng rồi vào lại (không đánh dấu xong vĩnh viễn). Action Land luôn lặp lại")]
     [SerializeField] private bool repeatable = false;
 
     public bool Repeatable => repeatable || action == TutorialAction.Land;

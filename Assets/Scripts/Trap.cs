@@ -1,7 +1,6 @@
 using UnityEngine;
 
-// Bẫy gây sát thương khi Player chạm. Có thể di chuyển qua lại ngang (chướng ngại vật di động).
-// Prefab cần Collider2D (trigger hoặc không). Không gắn tag "Enemy" để không bị coi là quái giẫm được.
+
 public class Trap : MonoBehaviour
 {
     [SerializeField] private int damage = 1;
