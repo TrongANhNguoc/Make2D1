@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Biome_Lava
   m_EditorClassIdentifier: 
   biomeName: Dung Nham
-  backgroundColor: {r: 0.5345911, g: 0.18474963, b: 0.13953161, a: 1}
+  backgroundColor: {r: 0.8679245, g: 0.6039528, b: 0.25382686, a: 1}
   levels:
   - {fileID: 11400000, guid: a26e3b2638118b64da014afc6f327239, type: 2}
   - {fileID: 11400000, guid: beeaac4141af2f84793f17b8b9307bd3, type: 2}

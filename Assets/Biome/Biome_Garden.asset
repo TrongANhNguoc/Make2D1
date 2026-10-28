@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Biome_Garden
   m_EditorClassIdentifier: 
   biomeName: "Khu V\u01B0\u1EDDn"
-  backgroundColor: {r: 0.59936774, g: 0.8117647, b: 0.25098038, a: 1}
+  backgroundColor: {r: 0.7287863, g: 0.8679245, b: 0.4994659, a: 1}
   levels:
   - {fileID: 11400000, guid: a26e3b2638118b64da014afc6f327239, type: 2}
   - {fileID: 11400000, guid: beeaac4141af2f84793f17b8b9307bd3, type: 2}

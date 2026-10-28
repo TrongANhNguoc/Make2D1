@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Biome_Ice
   m_EditorClassIdentifier: 
   biomeName: "B\u0103ng Gi\xE1"
-  backgroundColor: {r: 0.16581617, g: 0.34423813, b: 0.40251565, a: 1}
+  backgroundColor: {r: 0.46570542, g: 0.78324646, b: 0.8867924, a: 1}
   levels:
   - {fileID: 11400000, guid: a26e3b2638118b64da014afc6f327239, type: 2}
   - {fileID: 11400000, guid: beeaac4141af2f84793f17b8b9307bd3, type: 2}

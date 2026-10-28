@@ -24,7 +24,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
 
     [SerializeField] private float playerRadius = 0.5f;
-    [SerializeField] private float unstuckLaunchHeight = 3.5f;
+    [SerializeField] private float unstuckLaunchHeight = 1.2f;
     [SerializeField] private bool debugJumps = false;
     private Rigidbody2D rb;
     private LineRenderer lineRenderer;
@@ -111,7 +111,7 @@ public class PlayerController : MonoBehaviour
 
             float gravity = Mathf.Abs(Physics2D.gravity.y * rb.gravityScale);
             float launchSpeed = Mathf.Sqrt(2f * gravity * unstuckLaunchHeight);
-            rb.velocity = new Vector2(0f, launchSpeed);
+            rb.velocity = new Vector2(rb.velocity.x * 0.5f, launchSpeed);
             if (!isOneWay) ResetJumps();
         }
     }

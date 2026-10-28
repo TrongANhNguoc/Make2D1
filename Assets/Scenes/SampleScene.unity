@@ -31030,7 +31030,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   playerRadius: 0.5
-  unstuckLaunchHeight: 3.5
+  unstuckLaunchHeight: 1.2
   debugJumps: 0
 --- !u!95 &1952826731
 Animator:
