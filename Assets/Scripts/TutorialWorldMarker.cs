@@ -1,8 +1,5 @@
 using UnityEngine;
 
-// Mũi tên nhún nhảy trong thế giới, chỉ vào quái / quả / Portal trong prefab Tutorial.
-// Tự tạo SpriteRenderer (không cần art). Đặt làm CON của vật cần chỉ (vd. quái) kèm localPosition ~ (0, 1.5):
-// vật bị hủy (quái bị giẫm, quả bị ăn) thì mũi tên biến mất theo. Gán `step` để mũi tên ẩn khi bước đó xong.
 public class TutorialWorldMarker : MonoBehaviour
 {
     [Tooltip("Ẩn mũi tên khi bước này hoàn thành (tùy chọn)")]
@@ -32,7 +29,6 @@ public class TutorialWorldMarker : MonoBehaviour
     {
         sr.enabled = step == null || !step.Completed;
 
-        // Thời gian thật: vẫn nhún đều khi slow-mo lúc ngắm
         transform.localPosition = basePosition + Vector3.up * (Mathf.Sin(Time.unscaledTime * bobSpeed) * bobHeight);
     }
 }

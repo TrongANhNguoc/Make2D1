@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class Trap : MonoBehaviour
 {
     [SerializeField] private int damage = 1;
@@ -52,6 +51,6 @@ public class Trap : MonoBehaviour
         if (player == null) return;
 
         nextHitTime = Time.time + hitCooldown;
-        player.TakeDamage(damage);
+        player.TakeDamage(damage, GetComponent<Collider2D>());
     }
 }

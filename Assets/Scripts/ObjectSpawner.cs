@@ -31,7 +31,6 @@ public class ObjectSpawner : MonoBehaviour
     [Range(0, 100)][SerializeField] private int airEnemySpawnChance = 15;
     [Range(0, 100)][SerializeField] private int groundEnemySpawnChance = 15;
 
-    // Vùng spawn ngang đang dùng: LevelConfig override hoặc minX/maxX serialized
     private float currentMinX;
     private float currentMaxX;
     private float nextSpawnY;
@@ -40,7 +39,6 @@ public class ObjectSpawner : MonoBehaviour
     private bool warnedMissingTrap;
     private readonly List<GameObject> spawned = new List<GameObject>();
 
-    // groundLayer trong scene từng để trống nên mọi kiểm tra va chạm đều không trúng gì → luôn gộp thêm Ground + Wall
     private int ObstacleMask => groundLayer.value | LayerMask.GetMask("Ground", "Wall");
 
     private void Start()
@@ -72,7 +70,6 @@ public class ObjectSpawner : MonoBehaviour
         ResetForStage();
     }
 
-    // Ải mới (hoặc run mới): xóa vật thể ải cũ, spawn lại từ điểm xuất phát tới Portal
     private void ResetForStage()
     {
         for (int i = 0; i < spawned.Count; i++)
@@ -84,7 +81,6 @@ public class ObjectSpawner : MonoBehaviour
         RunManager run = RunManager.Instance;
         LevelConfig level = run != null ? run.CurrentLevel : null;
 
-        // Tutorial: mọi vật thể (quái/quả/bẫy) đặt cố định trong prefab terrain, không sinh ngẫu nhiên/boss/bẫy cố định
         if (run != null && run.IsTutorial)
         {
             nextSpawnY = 0f;
@@ -92,7 +88,6 @@ public class ObjectSpawner : MonoBehaviour
             return;
         }
 
-        // Mỗi map rộng khác nhau nên ải có thể override vùng spawn ngang
         bool overrideX = level != null && level.overrideSpawnX;
         currentMinX = overrideX ? Mathf.Min(level.spawnMinX, level.spawnMaxX) : minX;
         currentMaxX = overrideX ? Mathf.Max(level.spawnMinX, level.spawnMaxX) : maxX;
@@ -106,7 +101,6 @@ public class ObjectSpawner : MonoBehaviour
 
             if (level.bossPrefab != null)
             {
-                // Boss bám camera nên vị trí ban đầu không quan trọng
                 Track(Instantiate(level.bossPrefab, new Vector3(0f, run.StageStartY, 0f), Quaternion.identity));
             }
         }
@@ -118,8 +112,6 @@ public class ObjectSpawner : MonoBehaviour
         }
     }
 
-    // Bẫy ở vị trí cho trước: không random, không kiểm tra va chạm, người thiết kế tự đặt offset.
-    // Có StartPoint thì offset (cả x, y) tính từ StartPoint; không có thì x là tọa độ thế giới (stageStartX = 0)
     private void SpawnFixedTraps(LevelConfig level, float stageStartX, float stageStartY)
     {
         if (level.fixedTraps == null) return;
@@ -140,7 +132,6 @@ public class ObjectSpawner : MonoBehaviour
 
     private void SpawnRandomObject(float spawnY)
     {
-        // Tỉ lệ coin / quái / bẫy lấy từ LevelConfig của ải hiện tại
         int coinRate = coinSpawnChance;
         int enemyRate = airEnemySpawnChance + groundEnemySpawnChance;
         int trapRate = 0;
@@ -161,11 +152,9 @@ public class ObjectSpawner : MonoBehaviour
 
         if (isEnemy)
         {
-            // Chia quái bay / quái đất theo tỉ lệ 2 trường serialized
             int enemySplit = airEnemySpawnChance + groundEnemySpawnChance;
             bool spawnAir = enemySplit <= 0 ? Random.value < 0.5f : Random.Range(0, enemySplit) < airEnemySpawnChance;
 
-            // Quái đất tự tìm mặt nền để đứng, không dùng điểm trống giữa không trung
             if (!spawnAir)
             {
                 SpawnGroundEnemy(spawnY);
@@ -173,7 +162,6 @@ public class ObjectSpawner : MonoBehaviour
             }
         }
 
-        // Không tìm được chỗ trống thì bỏ lượt này (không ép spawn ở x = 0 như trước, dễ dính tường)
         if (!TryFindFreePosition(spawnY, out Vector3 validSpawnPos)) return;
 
         if (randomRoll < coinRate) SqawnCoin(validSpawnPos);
@@ -197,7 +185,6 @@ public class ObjectSpawner : MonoBehaviour
         return false;
     }
 
-    // Hộp collider của prefab (đã nhân scale) và độ lệch tâm so với pivot; không có collider thì 1x1
     private static void GetColliderBox(GameObject prefab, out Vector2 offset, out Vector2 size)
     {
         Vector2 scale = new Vector2(Mathf.Abs(prefab.transform.localScale.x), Mathf.Abs(prefab.transform.localScale.y));
@@ -228,7 +215,6 @@ public class ObjectSpawner : MonoBehaviour
         }
     }
 
-    // Tìm vị trí lơ lửng đủ khoảng trống so với đất phía trên/dưới, rồi kiểm tra hộp collider thật không chạm ground/wall
     private bool TryGetAirPosition(Vector3 spawnPosition, GameObject prefab, out Vector3 finalPos)
     {
         finalPos = spawnPosition;
@@ -247,7 +233,6 @@ public class ObjectSpawner : MonoBehaviour
 
         finalPos.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
 
-        // Tính cả offset của collider và chút đệm để không sát tường
         GetColliderBox(prefab, out Vector2 offset, out Vector2 size);
         Vector2 center = (Vector2)finalPos + offset;
         return Physics2D.OverlapBox(center, size + Vector2.one * 0.2f, 0f, ObstacleMask) == null;
@@ -282,7 +267,6 @@ public class ObjectSpawner : MonoBehaviour
         Track(Instantiate(airEnemyPrefab, finalPos, Quaternion.identity));
     }
 
-    // Quái đất: thử vài X ngẫu nhiên, bắn tia xuống tìm mặt nền nằm ngang rồi đặt đáy collider lên mặt nền
     private void SpawnGroundEnemy(float spawnY)
     {
         if (groundEnemyPrefab == null) return;
@@ -295,13 +279,11 @@ public class ObjectSpawner : MonoBehaviour
         {
             Vector2 origin = new Vector2(Random.Range(currentMinX, currentMaxX), spawnY);
 
-            // Điểm xuất phát nằm trong tường/nền thì tia không trúng chính nó → bỏ qua
             if (Physics2D.OverlapPoint(origin, ObstacleMask) != null) continue;
 
             RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 8.0f, ObstacleMask);
             if (hit.collider == null || hit.normal.y <= 0.7f) continue;
 
-            // Cả hai mép dưới của quái đều phải có nền, tránh đứng chênh vênh ngoài mép
             float probeY = hit.point.y + 0.1f;
             bool leftSupported = Physics2D.Raycast(new Vector2(origin.x - halfWidth * 0.9f, probeY), Vector2.down, 0.3f, ObstacleMask).collider != null;
             bool rightSupported = Physics2D.Raycast(new Vector2(origin.x + halfWidth * 0.9f, probeY), Vector2.down, 0.3f, ObstacleMask).collider != null;
@@ -309,7 +291,6 @@ public class ObjectSpawner : MonoBehaviour
 
             Vector3 pos = new Vector3(origin.x, hit.point.y - bottomOffset + 0.02f, 0f);
 
-            // Hộp thu nhỏ và nâng nhẹ để không tính chạm chính mặt nền bên dưới
             Vector2 center = (Vector2)pos + offset + Vector2.up * 0.05f;
             if (Physics2D.OverlapBox(center, size * 0.85f, 0f, ObstacleMask) != null) continue;
 
@@ -318,7 +299,6 @@ public class ObjectSpawner : MonoBehaviour
         }
     }
 
-    // Chọn prefab quả: ưu tiên loại đang cần của Fruit Challenge, không thì random trong fruitPrefabs
     private GameObject PickFruitPrefab()
     {
         if (fruitPrefabs == null || fruitPrefabs.Length == 0) return coinPrefab;

@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// Phím tắt để test nhanh các tính năng. Gắn vào 1 GameObject bất kỳ trong scene (vd. "GameManager").
-// Chỉ chạy trong Editor / Development Build.
 public class DebugCheats : MonoBehaviour
 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -9,10 +7,8 @@ public class DebugCheats : MonoBehaviour
 
     private void Update()
     {
-        // Chuyển ải ngay (test Portal / RunManager / Victory khi đang ở ải 4)
         if (Input.GetKeyDown(KeyCode.N) && RunManager.Instance != null) RunManager.Instance.LoadNextStage();
 
-        // Dịch player lên ngay dưới Portal để tự bay vào
         if (Input.GetKeyDown(KeyCode.T) && RunManager.Instance != null)
         {
             PlayerController pc = FindObjectOfType<PlayerController>();
@@ -25,21 +21,19 @@ public class DebugCheats : MonoBehaviour
         }
 
         PlayerCollision player = FindObjectOfType<PlayerCollision>();
-        if (Input.GetKeyDown(KeyCode.H) && player != null) player.TakeDamage(1);   // mất 1 tim
-        if (Input.GetKeyDown(KeyCode.K) && player != null) player.Kill();          // chết -> hiện DeathUI (bị bỏ qua khi đang bất tử)
-        if (Input.GetKeyDown(KeyCode.R) && player != null) player.Revive();        // hồi sinh ngay, bỏ qua video (chỉ khi đang chết)
+        if (Input.GetKeyDown(KeyCode.H) && player != null) player.TakeDamage(1);
+        if (Input.GetKeyDown(KeyCode.K) && player != null) player.Kill();
+        if (Input.GetKeyDown(KeyCode.R) && player != null) player.Revive();
 
         if (Input.GetKeyDown(KeyCode.C) && CurrencyManager.Instance != null) CurrencyManager.Instance.AddCoins(10);
         if (Input.GetKeyDown(KeyCode.X) && ScoreManager.Instance != null) ScoreManager.Instance.AddPoints(100);
 
-        // Pause / Resume
         if (Input.GetKeyDown(KeyCode.P) && GameManager.Instance != null)
         {
             if (GameManager.Instance.CurrentState == GameState.Paused) GameManager.Instance.ResumeGame();
             else GameManager.Instance.PauseGame();
         }
 
-        // Xóa cờ Tutorial đã xong: dừng Play rồi Play lại → "1 người" sẽ vào Tutorial từ đầu
         if (Input.GetKeyDown(KeyCode.F11))
         {
             PlayerPrefs.DeleteKey(RunManager.TutorialDoneKey);
@@ -47,7 +41,6 @@ public class DebugCheats : MonoBehaviour
             Debug.Log("DebugCheats: đã xóa TutorialDone. Dừng Play rồi Play lại để vào Tutorial từ đầu.");
         }
 
-        // Xóa toàn bộ save (ví + biome đã mở). Dừng Play rồi Play lại để có hiệu lực
         if (Input.GetKeyDown(KeyCode.F12))
         {
             PlayerPrefs.DeleteAll();

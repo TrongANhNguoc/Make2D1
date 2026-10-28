@@ -2,8 +2,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Đồng hồ đếm ngược dạng quay cho vòng Fruit Challenge (ải 1): hình tròn quét theo chiều kim đồng hồ,
-// kim (tùy chọn) quay theo. Tự ẩn khi ải không có challenge.
 public class RoundTimerUI : MonoBehaviour
 {
     [Tooltip("Image hình tròn; script tự đặt Type = Filled, Radial 360, xuất phát từ đỉnh")]
@@ -25,12 +23,9 @@ public class RoundTimerUI : MonoBehaviour
         clockFill.type = Image.Type.Filled;
         clockFill.fillMethod = Image.FillMethod.Radial360;
         clockFill.fillOrigin = (int)Image.Origin360.Top;
-        // Ngược chiều kim đồng hồ: phần còn lại thu dần theo chiều kim đồng hồ như kim quay
         clockFill.fillClockwise = false;
     }
 
-    // Tắt `root` chỉ an toàn khi script nằm NGOÀI root. Nếu script là con của root (hoặc chính root) thì tắt root
-    // sẽ tắt luôn Update → đồng hồ không bao giờ hiện lại ở ải sau, nên chỉ ẩn từng phần.
     private void SetVisible(bool visible)
     {
         bool scriptInsideRoot = root != null && transform.IsChildOf(root.transform);
@@ -43,7 +38,6 @@ public class RoundTimerUI : MonoBehaviour
 
         if (scriptInsideRoot)
         {
-            // Nền của root (nếu có) cũng ẩn theo
             UnityEngine.UI.Graphic rootGraphic = root.GetComponent<UnityEngine.UI.Graphic>();
             if (rootGraphic != null) rootGraphic.enabled = visible;
         }

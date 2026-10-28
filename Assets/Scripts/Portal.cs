@@ -6,7 +6,6 @@ public class Portal : MonoBehaviour
     [Tooltip("Tự đặt Portal ở đỉnh ải (StageStartY + targetHeight) mỗi khi ải đổi")]
     [SerializeField] private bool placeAtTargetHeight = true;
 
-    // Vị trí x đặt trong scene: ải không có PortalPoint thì quay về x này
     private float defaultX;
 
     private void Reset()
@@ -14,7 +13,6 @@ public class Portal : MonoBehaviour
         GetComponent<Collider2D>().isTrigger = true;
     }
 
-    // Dùng Start để chắc chắn RunManager.Awake đã chạy; nếu RunManager.Start chạy sau thì event sẽ đặt vị trí
     private void Start()
     {
         defaultX = transform.position.x;
@@ -50,7 +48,6 @@ public class Portal : MonoBehaviour
         RunManager run = RunManager.Instance;
         Vector3 pos = transform.position;
 
-        // Map có PortalPoint: đặt đúng vị trí đó (cả x và y); không thì chỉ chỉnh độ cao
         if (run.HasPortalPoint)
         {
             pos.x = run.PortalPointPosition.x;

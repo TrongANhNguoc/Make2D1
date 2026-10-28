@@ -1,16 +1,15 @@
 using UnityEngine;
 
-// Hành động Player cần làm để hoàn thành 1 bước hướng dẫn
 public enum TutorialAction
 {
-    None,           // Chỉ hiện gợi ý khi ở trong vùng, hết khi rời vùng (vd. bước Portal)
-    Launch,         // Bắn (kéo-thả chuột) lần đầu
-    LaunchInAir,    // Bắn khi chưa chạm đất (nhảy lần 2 trên không)
-    Land,           // Chạm đất
-    GroundSlam,     // Lao thẳng xuống
-    EnemyStomped,   // Giẫm chết quái
-    FruitCollected, // Ăn 1 quả
-    Damaged         // Mất tim (chạm bẫy) hoặc rơi dung nham/KillZone
+    None,
+    Launch,
+    LaunchInAir,
+    Land,
+    GroundSlam,
+    EnemyStomped,
+    FruitCollected,
+    Damaged
 }
 
 [RequireComponent(typeof(Collider2D))]
@@ -52,7 +51,6 @@ public class TutorialStep : MonoBehaviour
 
     private void OnDisable()
     {
-        // Terrain bị hủy khi đổi ải: OnTriggerExit không chắc được gọi
         if (TutorialManager.Instance != null) TutorialManager.Instance.ExitStep(this);
     }
 

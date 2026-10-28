@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// Bẫy cố định kiểu "đá khổng lồ lăn xuống": đứng yên ở vị trí đặt sẵn, khi Player lại gần thì rơi/lăn xuống.
-// Prefab cần: Rigidbody2D, Collider2D (Circle), Trap (gây sát thương). Không gắn tag "Enemy".
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Trap))]
 public class RollingBoulder : MonoBehaviour
@@ -23,7 +21,6 @@ public class RollingBoulder : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        // Đứng yên cho tới khi được thả
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.velocity = Vector2.zero;
     }

@@ -3,9 +3,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
-// Nạp địa hình (Tilemap) riêng cho từng ải. Do RunManager sở hữu và gọi Load() ở đầu BeginStage,
-// tức là TRƯỚC khi teleport player và TRƯỚC khi bắn OnStageChanged (ObjectSpawner / Portal / Fruit Challenge).
-// Ải không có terrainPrefab thì dùng lại Grid có sẵn trong scene (tương thích ngược).
 public class StageTerrainLoader
 {
     public const string StartPointName = "StartPoint";
@@ -14,8 +11,8 @@ public class StageTerrainLoader
 
     private readonly string defaultTerrainName;
 
-    private GameObject current;          // terrain đang Instantiate (null nếu đang dùng Grid mặc định)
-    private GameObject defaultTerrain;   // Grid có sẵn trong scene
+    private GameObject current;
+    private GameObject defaultTerrain;
     private CinemachineConfiner2D confiner;
     private Collider2D defaultConfinerShape;
 
@@ -49,7 +46,6 @@ public class StageTerrainLoader
 
         UpdateConfiner();
 
-        // Collider mới phải có trong physics scene trước khi spawner raycast vào groundLayer
         Physics2D.SyncTransforms();
     }
 
@@ -59,13 +55,11 @@ public class StageTerrainLoader
         PortalPoint = null;
         if (current == null) return;
 
-        // Tắt ngay để collider cũ biến khỏi truy vấn physics; Destroy thật diễn ra cuối frame
         current.SetActive(false);
         Object.Destroy(current);
         current = null;
     }
 
-    // Grid mặc định: root object trong scene tên defaultTerrainName (kể cả đang bị ẩn). Tìm lại sau khi reload scene
     private void FindDefaultTerrain()
     {
         if (defaultTerrain != null) return;
@@ -80,7 +74,6 @@ public class StageTerrainLoader
         }
     }
 
-    // Tilemap mới tạo: ép sinh collider ngay để raycast frame này đã thấy
     private static void BuildColliders(GameObject terrain)
     {
         foreach (TilemapCollider2D tilemapCollider in terrain.GetComponentsInChildren<TilemapCollider2D>())
@@ -94,7 +87,6 @@ public class StageTerrainLoader
         }
     }
 
-    // Confiner bám theo collider "CameraBounds" của map mới; map mặc định thì trả về collider gốc của scene
     private void UpdateConfiner()
     {
         if (confiner == null)

@@ -1,9 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Đạn / đá rơi do Boss bắn. Cần Collider2D (isTrigger). Player có Rigidbody2D nên trigger sẽ được gọi.
-// Dùng object pool: đạn ra khỏi màn hình (hoặc hết lifeTime / trúng Player) thì tắt và quay về hàng chờ để tái sử dụng,
-// thay vì Instantiate/Destroy liên tục. Tạo đạn bằng Projectile.Spawn, không dùng Instantiate trực tiếp.
 public class Projectile : MonoBehaviour
 {
     [SerializeField] private float speed = 6f;
@@ -12,7 +9,6 @@ public class Projectile : MonoBehaviour
     [Tooltip("Đạn ra khỏi mép camera quá khoảng này (tỉ lệ viewport) thì quay về hàng chờ")]
     [SerializeField] private float offscreenMargin = 0.15f;
 
-    // Hàng chờ theo từng prefab (static: dùng chung giữa các boss/ải)
     private static readonly Dictionary<Projectile, Stack<Projectile>> pools = new Dictionary<Projectile, Stack<Projectile>>();
 
     private Projectile sourcePrefab;
@@ -22,14 +18,12 @@ public class Projectile : MonoBehaviour
     private bool released;
     private Camera cam;
 
-    // Lấy đạn từ hàng chờ (hết thì tạo mới) và bắn theo hướng dir
     public static Projectile Spawn(Projectile prefab, Vector3 position, Vector2 dir)
     {
         Projectile p = null;
 
         if (pools.TryGetValue(prefab, out Stack<Projectile> pool))
         {
-            // Bỏ qua đạn đã bị Unity hủy (vd. reload scene)
             while (pool.Count > 0 && p == null) p = pool.Pop();
         }
 
@@ -66,7 +60,6 @@ public class Projectile : MonoBehaviour
         if (age >= lifeTime || IsOffscreen()) Release();
     }
 
-    // Chỉ tính "ra khỏi màn hình" sau khi đã từng vào màn hình (mưa đạn sinh ra phía trên mép camera)
     private bool IsOffscreen()
     {
         if (cam == null) cam = Camera.main;
@@ -81,7 +74,6 @@ public class Projectile : MonoBehaviour
         return hasBeenOnScreen && beyondMargin;
     }
 
-    // Tắt và trả về hàng chờ; prefab gốc (không do Spawn tạo) thì hủy như cũ
     private void Release()
     {
         if (released) return;
@@ -108,7 +100,7 @@ public class Projectile : MonoBehaviour
         PlayerCollision player = other.GetComponentInParent<PlayerCollision>();
         if (player == null) return;
 
-        player.TakeDamage(damage);
+        player.TakeDamage(damage, GetComponent<Collider2D>());
         Release();
     }
 }

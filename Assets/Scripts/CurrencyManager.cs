@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-// Ví Fruit Coin: lưu bền vững bằng PlayerPrefs. Chuyển đổi: 100 điểm gameplay = 1 Fruit Coin (xem ScoreManager.FruitCoins)
 public class CurrencyManager : MonoBehaviour
 {
     private const string BalanceKey = "FruitCoins";
@@ -38,7 +37,6 @@ public class CurrencyManager : MonoBehaviour
         Save();
     }
 
-    // Trả về false nếu không đủ tiền (dùng cho Gacha sau này)
     public bool TrySpend(int amount)
     {
         if (amount < 0 || Balance < amount) return false;

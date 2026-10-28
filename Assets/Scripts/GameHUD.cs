@@ -2,7 +2,6 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
-// HUD trong ải: điểm, combo, ví Fruit Coin, đồng hồ ải, tên biome/ải. Ô nào không gán thì bỏ qua.
 public class GameHUD : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI scoreText;
@@ -63,7 +62,6 @@ public class GameHUD : MonoBehaviour
         if (RunManager.Instance != null) RunManager.Instance.OnStageChanged -= UpdateStage;
     }
 
-    // Victory: ẩn điểm, combo, ví để chỉ còn bảng Victory; chơi lại thì hiện lại
     private void ApplyStateVisibility(GameState state)
     {
         bool show = state != GameState.Victory;

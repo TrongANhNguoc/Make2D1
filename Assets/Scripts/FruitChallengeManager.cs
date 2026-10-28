@@ -11,9 +11,6 @@ public enum FruitType
     Orange
 }
 
-// Cơ chế ải Speed Rush: mỗi vòng phải ăn đủ vài loại quả (mỗi loại 1 số lượng) trong thời gian giới hạn,
-// xong thì random yêu cầu mới. Đủ số vòng thì qua ải. Hết giờ thì mất máu và sang vòng mới.
-// Gắn vào 1 object trong scene. Chỉ hoạt động khi LevelConfig.fruitChallengeEnabled = true.
 public class FruitChallengeManager : MonoBehaviour
 {
     public static FruitChallengeManager Instance { get; private set; }
@@ -32,7 +29,7 @@ public class FruitChallengeManager : MonoBehaviour
     public int RoundsToClear => level != null ? level.fruitRoundsToClear : 0;
     public IReadOnlyDictionary<FruitType, int> Needs => needs;
 
-    public event Action OnRoundChanged;   // vòng mới hoặc tiến độ ăn quả thay đổi
+    public event Action OnRoundChanged;
     public event Action OnRoundFailed;
     public event Action OnRoundCleared;
 
@@ -67,7 +64,6 @@ public class FruitChallengeManager : MonoBehaviour
         if (!IsActive) return;
         if (GameManager.Instance != null && !GameManager.Instance.IsPlaying) return;
 
-        // deltaTime có scale: ngắm bắn slow-mo không bị trừ giờ như thời gian thật
         RoundTimeRemaining -= Time.deltaTime;
         if (RoundTimeRemaining <= 0f) FailRound();
     }
@@ -84,7 +80,6 @@ public class FruitChallengeManager : MonoBehaviour
         else OnRoundChanged?.Invoke();
     }
 
-    // Gọi từ coin.cs khi Player ăn quả
     public void OnFruitCollected(FruitType type)
     {
         if (!IsActive) return;
@@ -102,7 +97,6 @@ public class FruitChallengeManager : MonoBehaviour
         }
     }
 
-    // Spawner dùng để ưu tiên sinh đúng loại quả đang cần
     public bool TryGetNeededType(out FruitType type)
     {
         List<FruitType> wanted = new List<FruitType>();
@@ -158,17 +152,14 @@ public class FruitChallengeManager : MonoBehaviour
             if (player != null) player.TakeDamage(level.fruitFailDamage);
         }
 
-        // Người chơi có thể đã chết do sát thương trên
         if (IsActive) StartRound();
     }
 
-    // Hồi sinh: bắt đầu lại vòng hiện tại với đủ thời gian (giữ nguyên số vòng đã xong)
     public void RestartCurrentRound()
     {
         if (IsActive) StartRound();
     }
 
-    // Random N loại quả khác nhau, mỗi loại 1..maxCount quả
     private void StartRound()
     {
         needs.Clear();

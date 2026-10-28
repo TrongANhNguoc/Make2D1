@@ -46,28 +46,22 @@ public class RunManager : MonoBehaviour
 
     public float StageTimeRemaining { get; private set; }
     public bool HasTimeLimit => !IsTutorial && CurrentLevel != null && CurrentLevel.timeLimit > 0f;
-    // Fruit Coins nhận được ở cuối run gần nhất (đã nhân ×2 nếu thắng)
     public int LastRunReward { get; private set; }
 
-    // 0-based: 0 = ải 1 ... 3 = ải 4
     public int CurrentStageIndex { get; private set; }
     public BiomeData CurrentBiome { get; private set; }
     public BiomeData NextBiome { get; private set; }
     public BiomeData JustUnlockedBiome { get; private set; }
     public LevelConfig CurrentLevel => IsTutorial ? tutorialLevel : (CurrentBiome != null ? CurrentBiome.GetLevel(CurrentStageIndex) : null);
-    // Đang ở ải Tutorial: không đếm giờ, không spawn ngẫu nhiên, không tính điểm/coin/run, chết thì về checkpoint
     public bool IsTutorial { get; private set; }
     public bool HasTutorial => tutorialLevel != null && tutorialLevel.terrainPrefab != null;
     public static bool IsTutorialDone => PlayerPrefs.GetInt(TutorialDoneKey, 0) == 1;
-    // Lần đầu bấm "1 người": vào Tutorial nếu chưa xong và đã có ải Tutorial hợp lệ
     public bool ShouldPlayTutorial => HasTutorial && !IsTutorialDone;
     public float StageStartX => stageStartX;
     public float StageStartY => stageStartY;
-    // Terrain của ải có child StartPoint / PortalPoint hay không
     public bool HasStartPoint => terrain != null && terrain.StartPoint != null;
     public bool HasPortalPoint => terrain != null && terrain.PortalPoint != null;
     public Vector3 PortalPointPosition => HasPortalPoint ? terrain.PortalPoint.position : Vector3.zero;
-    // Có PortalPoint thì độ cao đích = y của PortalPoint, không thì StageStartY + targetHeight
     public float TargetY
     {
         get
@@ -127,7 +121,6 @@ public class RunManager : MonoBehaviour
         }
     }
 
-    // Dùng deltaTime có scale: ngắm bắn slow-mo không bị trừ giờ như thời gian thật
     private void UpdateStageTimer()
     {
         if (!runActive || timedOut || !HasTimeLimit) return;
@@ -136,14 +129,12 @@ public class RunManager : MonoBehaviour
         if (StageTimeRemaining > 0f) return;
 
         PlayerCollision player = FindObjectOfType<PlayerCollision>();
-        // Đang bất tử (vừa hồi sinh) thì Kill bị bỏ qua → chờ hết bất tử mới tính hết giờ, tránh kẹt timedOut
         if (player != null && player.IsInvincible) return;
 
         timedOut = true;
         if (player != null) player.Kill();
     }
 
-    // Player hồi sinh: nếu chết do hết giờ ải thì mở lại đồng hồ và cộng thêm thời gian
     public void HandleRevive()
     {
         if (!timedOut) return;
@@ -152,7 +143,6 @@ public class RunManager : MonoBehaviour
         StageTimeRemaining += reviveExtraSeconds;
     }
 
-    // Phá đảo 4 ải: nhận ×2 Fruit Coins toàn trận. Thất bại: giữ 100% số coin đã nhặt
     private void AwardRunCoins(bool victory)
     {
         if (rewardGiven || IsTutorial) return;
@@ -170,27 +160,22 @@ public class RunManager : MonoBehaviour
         return index >= 0 && index < UnlockedBiomeCount;
     }
 
-    // Bắt đầu 1 run mới: ải 1 của biome đã chọn (lượt đầu = biome đầu tiên, lượt sau = biome đã random)
     public void StartRun()
     {
         BeginRun(false);
     }
 
-    // Dùng cho nút "Chơi tiếp" sau Victory: run mới + đưa player về điểm xuất phát + chạy lại game
     public void StartNewRun()
     {
         BeginRun(true);
         if (GameManager.Instance != null) GameManager.Instance.StartGame();
     }
 
-    // Chuẩn bị run mới (ải 1, đưa player về điểm xuất phát) nhưng CHƯA chạy game: dùng khi "Về menu" sau Victory,
-    // lượt chơi bắt đầu khi người chơi chọn chế độ ở menu (GameManager.StartGame)
     public void PrepareNewRun()
     {
         BeginRun(true);
     }
 
-    // Vào ải Tutorial (chưa chạy game: gọi GameManager.StartGame() sau đó). Không phải 1 run: runActive = false
     public bool StartTutorial()
     {
         if (!HasTutorial)
@@ -212,7 +197,6 @@ public class RunManager : MonoBehaviour
         return true;
     }
 
-    // Qua Portal của Tutorial hoặc bấm "Bỏ qua": đánh dấu đã xong rồi bắt đầu run bình thường (biome đầu, ải 1)
     public void SkipTutorial()
     {
         if (IsTutorial) CompleteTutorial();
@@ -228,7 +212,6 @@ public class RunManager : MonoBehaviour
         ResetPlayerState();
     }
 
-    // Tutorial không được để lại điểm hay máu bị trừ sang run thật
     private void ResetPlayerState()
     {
         Transform player = GetPlayer();
@@ -243,7 +226,6 @@ public class RunManager : MonoBehaviour
         checkpointPosition = position;
     }
 
-    // Tutorial: đưa player về checkpoint gần nhất đã đi qua (không có thì StartPoint), reset vận tốc + lượt nhảy
     public void RespawnPlayerAtCheckpoint()
     {
         Transform player = GetPlayer();
@@ -277,7 +259,6 @@ public class RunManager : MonoBehaviour
         OnRunStarted?.Invoke(CurrentBiome);
     }
 
-    // Gọi khi đạt độ cao hoặc chui qua Portal
     public void LoadNextStage()
     {
         if (IsTutorial)
@@ -303,17 +284,14 @@ public class RunManager : MonoBehaviour
         }
     }
 
-    // Room-to-Room: mỗi ải bắt đầu lại từ điểm xuất phát của player
     private void BeginStage(bool teleportPlayer)
     {
         Transform player = GetPlayer();
 
-        // Terrain phải xong trước khi teleport player và trước OnStageChanged (spawner raycast vào ground)
         terrain.Load(CurrentLevel);
 
         Vector3 start = terrain.StartPoint != null ? terrain.StartPoint.position : startPosition;
 
-        // Có StartPoint thì luôn đưa player tới đó (kể cả lần vào đầu tiên / sau reload scene)
         if (player != null && (teleportPlayer || terrain.StartPoint != null)) TeleportPlayerToStart(player, start);
 
         stageStartX = start.x;
@@ -344,7 +322,6 @@ public class RunManager : MonoBehaviour
         PlayerController controller = player.GetComponent<PlayerController>();
         if (controller != null) controller.ResetJumps();
 
-        // Tránh camera trượt dài từ đỉnh ải cũ về điểm xuất phát
         CinemachineVirtualCamera vcam = FindObjectOfType<CinemachineVirtualCamera>();
         if (vcam != null) vcam.OnTargetObjectWarped(player, delta);
     }
@@ -363,7 +340,6 @@ public class RunManager : MonoBehaviour
         OnVictory?.Invoke(finished);
     }
 
-    // Thắng biome mới nhất đang mở thì mở biome kế tiếp trong danh sách
     private void UnlockNextBiome(BiomeData finished)
     {
         int index = Array.IndexOf(biomes, finished);
@@ -375,7 +351,6 @@ public class RunManager : MonoBehaviour
         JustUnlockedBiome = biomes[index + 1];
     }
 
-    // Chọn biome random (trong số đã mở khóa) cho lượt chơi sau, cố tránh lặp lại biome vừa chơi
     private void RollNextBiome()
     {
         if (biomes == null || biomes.Length == 0) return;
@@ -430,7 +405,6 @@ public class RunManager : MonoBehaviour
         return playerTransform;
     }
 
-    // Thua giữa chừng cũng kết thúc run: lượt sau random biome mới, về ải 1 khi reload
     private void HandleGameStateChanged(GameState state)
     {
         if (state == GameState.GameOver)
@@ -446,7 +420,6 @@ public class RunManager : MonoBehaviour
         }
     }
 
-    // Scene reload: player mới, camera mới → áp lại biome và điểm bắt đầu ải
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         playerTransform = null;

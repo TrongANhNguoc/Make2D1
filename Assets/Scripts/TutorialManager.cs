@@ -3,9 +3,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Hiện gợi ý từng bước trong ải Tutorial. Lắng nghe event của PlayerController / PlayerCollision / coin,
-// không poll mỗi frame. Gắn vào 1 object luôn active trong Canvas (vd. "TutorialUI"); hintPanel / skipButton là con.
-// Chỉ hoạt động khi RunManager.IsTutorial; ải thường thì ẩn toàn bộ.
 public class TutorialManager : MonoBehaviour
 {
     public static TutorialManager Instance { get; private set; }
@@ -20,7 +17,6 @@ public class TutorialManager : MonoBehaviour
 
     private readonly List<TutorialStep> activeSteps = new List<TutorialStep>();
     private TutorialStep shown;
-    // Bước đã làm xong nhưng còn hiện thêm vài giây (step, thời điểm ẩn theo unscaledTime)
     private readonly List<KeyValuePair<TutorialStep, float>> lingering = new List<KeyValuePair<TutorialStep, float>>();
     private bool tutorialActive;
     private PlayerController player;
@@ -39,7 +35,6 @@ public class TutorialManager : MonoBehaviour
 
     private void Start()
     {
-        // Tìm player 1 lần (reload scene tạo manager mới nên tìm lại)
         player = FindObjectOfType<PlayerController>();
         if (player != null)
         {
@@ -114,8 +109,6 @@ public class TutorialManager : MonoBehaviour
         if (changed) Refresh();
     }
 
-    // ---------------------------------------------------------------- Vùng trigger
-
     public void EnterStep(TutorialStep step)
     {
         if (!tutorialActive || step.Completed || activeSteps.Contains(step)) return;
@@ -130,8 +123,6 @@ public class TutorialManager : MonoBehaviour
         Refresh();
     }
 
-    // ---------------------------------------------------------------- Event Player
-
     private void HandleLaunched(bool fromGround)
     {
         Report(TutorialAction.Launch);
@@ -144,7 +135,6 @@ public class TutorialManager : MonoBehaviour
     private void HandleDamaged() { Report(TutorialAction.Damaged); }
     private void HandleFruitCollected(FruitType type) { Report(TutorialAction.FruitCollected); }
 
-    // Hoàn thành mọi bước đang hiện có action khớp
     private void Report(TutorialAction action)
     {
         if (!tutorialActive || activeSteps.Count == 0) return;
@@ -163,8 +153,6 @@ public class TutorialManager : MonoBehaviour
 
         if (changed) Refresh();
     }
-
-    // ---------------------------------------------------------------- Trạng thái
 
     private void HandleStageChanged(BiomeData biome, LevelConfig level)
     {
@@ -192,7 +180,6 @@ public class TutorialManager : MonoBehaviour
             if (shown == null || step.Order < shown.Order) shown = step;
         }
 
-        // Chưa có bước nào đang chờ thì hiện nốt bước vừa xong (đang nán lại)
         if (shown == null && lingering.Count > 0) shown = lingering[lingering.Count - 1].Key;
 
         bool playing = GameManager.Instance == null || GameManager.Instance.IsPlaying;

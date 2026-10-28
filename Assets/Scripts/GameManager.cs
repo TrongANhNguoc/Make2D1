@@ -8,7 +8,7 @@ public enum GameState
     Paused,
     GameOver,
     Victory,
-    Dead    // Player hết máu, chờ chọn Chơi lại / Xem video hồi sinh (timeScale = 0, như pause)
+    Dead
 }
 
 public enum GameMode
@@ -28,10 +28,8 @@ public class GameManager : MonoBehaviour
 
     public GameState CurrentState { get; private set; }
     public bool IsPlaying => CurrentState == GameState.Playing;
-    // Chế độ chơi đã chọn ở màn hình menu (GameManager sống qua các lần reload scene)
     public GameMode SelectedMode { get; private set; } = GameMode.SinglePlayer;
 
-    // Các script khác đăng ký để phản ứng khi trạng thái đổi (UI, spawner, ...)
     public event Action<GameState> OnStateChanged;
 
     private void Awake()
@@ -66,7 +64,6 @@ public class GameManager : MonoBehaviour
         OnStateChanged?.Invoke(newState);
     }
 
-    // Slow-motion khi ngắm bắn: chỉ có hiệu lực lúc Playing, pause vẫn ưu tiên
     public void SetSlowMotion(float scale)
     {
         slowMotionScale = scale;
@@ -85,7 +82,6 @@ public class GameManager : MonoBehaviour
         SelectedMode = mode;
     }
 
-    // Về màn hình chọn chế độ (dừng game như pause); lượt mới chỉ bắt đầu khi gọi StartGame()
     public void GoToMenu()
     {
         slowMotionScale = 1f;
@@ -102,14 +98,12 @@ public class GameManager : MonoBehaviour
         if (CurrentState == GameState.Paused) SetState(GameState.Playing);
     }
 
-    // Player vừa hết máu: dừng game nhưng chưa tính thua (GameOver chỉ gọi khi chọn Chơi lại)
     public void PlayerDead()
     {
         if (CurrentState == GameState.Dead) return;
         SetState(GameState.Dead);
     }
 
-    // Hồi sinh: Dead → Playing
     public void Revive()
     {
         if (CurrentState == GameState.Dead) SetState(GameState.Playing);

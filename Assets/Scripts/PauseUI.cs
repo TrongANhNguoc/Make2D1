@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Bảng pause: bấm Esc khi đang chơi để dừng game; "Tiếp tục" chơi tiếp, "Thoát" về menu chọn chế độ.
-// Gắn vào 1 object luôn active (vd. Canvas); `panel` là object con bị ẩn mặc định.
 public class PauseUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -52,7 +50,6 @@ public class PauseUI : MonoBehaviour
     {
         if (panel != null) panel.SetActive(false);
 
-        // Giống VictoryUI "Về menu": chuẩn bị run mới rồi dừng ở menu
         if (RunManager.Instance != null) RunManager.Instance.PrepareNewRun();
         if (GameManager.Instance != null) GameManager.Instance.GoToMenu();
     }

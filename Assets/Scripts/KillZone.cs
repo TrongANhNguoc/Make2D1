@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// Vùng nguy hiểm / vực: Player chạm vào là chết ngay.
-// Prefab cần Collider2D isTrigger. Logic độc lập với sprite nên có thể đổi art thoải mái.
 [RequireComponent(typeof(Collider2D))]
 public class KillZone : MonoBehaviour
 {

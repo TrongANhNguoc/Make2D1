@@ -1,9 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Màn hình chọn chế độ chơi. Hiện khi GameManager ở state Menu (lần đầu vào game, hoặc "Về menu" sau Victory);
-// reload scene sau khi chết thì GameManager đã ở Playing nên không hiện lại.
-// Gắn vào 1 object luôn active (vd. Canvas); `panel` là object con bị ẩn mặc định.
 public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -19,7 +16,6 @@ public class MainMenuUI : MonoBehaviour
         if (singlePlayerButton != null) singlePlayerButton.onClick.AddListener(OnSinglePlayerClicked);
         if (tutorialButton != null) tutorialButton.onClick.AddListener(OnTutorialClicked);
 
-        // Chế độ 2 người chưa có: khóa nút, đổi xám
         if (twoPlayerButton != null)
         {
             twoPlayerButton.interactable = false;
@@ -29,7 +25,6 @@ public class MainMenuUI : MonoBehaviour
         GameManager gm = GameManager.Instance;
         if (gm != null) gm.OnStateChanged += HandleStateChanged;
 
-        // GameManager.Start có thể chạy sau: state mặc định của nó là Menu nên vẫn hiện, rồi HandleStateChanged sẽ ẩn nếu cần
         SetVisible(gm != null && gm.CurrentState == GameState.Menu);
     }
 
@@ -47,7 +42,6 @@ public class MainMenuUI : MonoBehaviour
     {
         if (panel == null) return;
 
-        // Đè lên mọi UI khác (HUD, Victory...)
         if (visible) panel.transform.SetAsLastSibling();
         panel.SetActive(visible);
     }
@@ -59,11 +53,10 @@ public class MainMenuUI : MonoBehaviour
         {
             gm.SelectMode(GameMode.SinglePlayer);
 
-            // Lần đầu (chưa có TutorialDone): vào Tutorial thay vì ải 1; Tutorial xong thì RunManager tự bắt đầu run thường
             RunManager run = RunManager.Instance;
             if (run != null && run.ShouldPlayTutorial) run.StartTutorial();
 
-            gm.StartGame();   // state → Playing, HandleStateChanged ẩn panel
+            gm.StartGame();
         }
 
         SetVisible(false);

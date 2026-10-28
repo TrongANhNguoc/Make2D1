@@ -14,6 +14,11 @@ public class PlayerCollision : MonoBehaviour
     [SerializeField] private float bounceForce = 6f;
     [SerializeField] private int enemyKillPoints = 100;
 
+    [Header("Hurt Knockback")]
+    [SerializeField] private float hurtDuration = 0.5f;
+    [SerializeField] private float knockbackForce = 6f;
+    [SerializeField] private float knockbackUpForce = 4f;
+
     [Header("Revive")]
     [SerializeField] private float invincibleSeconds = 2f;
     [Tooltip("Hồi sinh cao hơn vị trí chết bao nhiêu unit")]
@@ -34,6 +39,8 @@ public class PlayerCollision : MonoBehaviour
     private bool reviveUsedThisStage = false;
     private float invincibleTimer;
     private float blinkTimer;
+    private float hurtTimer;
+    private Collider2D hurtIgnoredCollider;
     private float checkRadius = 0.5f;
     private Vector3 deathPosition;
 
@@ -41,13 +48,10 @@ public class PlayerCollision : MonoBehaviour
     public int MaxHealth => maxHealth;
     public bool IsDead => isDead;
     public bool IsInvincible => invincibleTimer > 0f;
-    // Mỗi ải chỉ được hồi sinh bằng video 1 lần
     public bool CanRevive => !reviveUsedThisStage;
 
-    // (máu hiện tại, máu tối đa) — HeartsUI đăng ký để vẽ trái tim
     public event Action<int, int> OnHealthChanged;
 
-    // TutorialManager lắng nghe: giẫm quái thành công / bị mất máu (kể cả chết ngay ở Tutorial)
     public event Action OnEnemyStomped;
     public event Action OnDamaged;
 
@@ -80,7 +84,6 @@ public class PlayerCollision : MonoBehaviour
         if (RunManager.Instance != null) RunManager.Instance.OnStageChanged -= HandleStageChanged;
     }
 
-    // Sang ải mới thì được quyền hồi sinh lại
     private void HandleStageChanged(BiomeData biome, LevelConfig level)
     {
         reviveUsedThisStage = false;
@@ -88,10 +91,16 @@ public class PlayerCollision : MonoBehaviour
 
     private void Update()
     {
-        if (invincibleTimer <= 0f) return;
         if (GameManager.Instance != null && !GameManager.Instance.IsPlaying) return;
 
-        // Dùng thời gian thật: ngắm bắn slow-mo không kéo dài thời gian bất tử
+        if (hurtTimer > 0f)
+        {
+            hurtTimer -= Time.unscaledDeltaTime;
+            if (hurtTimer <= 0f) EndHurt();
+        }
+
+        if (invincibleTimer <= 0f) return;
+
         invincibleTimer -= Time.unscaledDeltaTime;
         blinkTimer += Time.unscaledDeltaTime;
 
@@ -133,14 +142,15 @@ public class PlayerCollision : MonoBehaviour
             }
             else
             {
-                TakeDamage(1);
+                TakeDamage(1, collision.collider);
             }
         }
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, Collider2D source = null)
     {
         if (isDead || IsInvincible) return;
+        if (source != null && hurtTimer > 0f) return;
 
         currentHealth -= damage;
         UpdateHealthUI();
@@ -148,13 +158,35 @@ public class PlayerCollision : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
+            return;
+        }
+
+        if (source != null) StartHurt(source);
+    }
+
+    private void StartHurt(Collider2D source)
+    {
+        EndHurt();
+        hurtTimer = hurtDuration;
+        hurtIgnoredCollider = source;
+        Physics2D.IgnoreCollision(playerCollider, source, true);
+
+        float dir = transform.position.x >= source.bounds.center.x ? 1f : -1f;
+        rb.velocity = new Vector2(dir * knockbackForce, knockbackUpForce);
+    }
+
+    private void EndHurt()
+    {
+        hurtTimer = 0f;
+        if (hurtIgnoredCollider != null)
+        {
+            Physics2D.IgnoreCollision(playerCollider, hurtIgnoredCollider, false);
+            hurtIgnoredCollider = null;
         }
     }
 
-    // Chết ngay (vd. hết giờ ải Speed Rush, KillZone). Bị bỏ qua khi đang bất tử
     public void Kill()
     {
-        // Tutorial: dung nham/KillZone luôn đưa về checkpoint, không phụ thuộc bất tử
         if (IsTutorialRun && !isDead)
         {
             OnDamaged?.Invoke();
@@ -165,14 +197,12 @@ public class PlayerCollision : MonoBehaviour
         TakeDamage(currentHealth);
     }
 
-    // Dùng khi rời Tutorial: máu đầy trở lại để không mang tim bị trừ sang run thật
     public void RestoreFullHealth()
     {
         currentHealth = maxHealth;
         UpdateHealthUI();
     }
 
-    // Tutorial: không DeathUI / không Dead state — hồi đầy máu, về checkpoint, reset lượt nhảy, bất tử ngắn
     private void RespawnInTutorial()
     {
         RestoreFullHealth();
@@ -184,7 +214,6 @@ public class PlayerCollision : MonoBehaviour
         blinkTimer = 0f;
     }
 
-    // Hết máu: dừng game ở state Dead và chờ DeathUI (Chơi lại / Xem video hồi sinh)
     private void Die()
     {
         if (IsTutorialRun)
@@ -193,6 +222,7 @@ public class PlayerCollision : MonoBehaviour
             return;
         }
 
+        EndHurt();
         isDead = true;
         deathPosition = transform.position;
         playerCollider.enabled = false;
@@ -205,19 +235,16 @@ public class PlayerCollision : MonoBehaviour
         }
         else
         {
-            // Không có GameManager (scene test): giữ hành vi cũ, reload sau 2s
             Invoke(nameof(ReloadScene), 2f);
         }
     }
 
-    // Nút "Chơi lại": lúc này mới tính thua (RunManager cộng coin, random biome) rồi reload scene
     public void RestartRun()
     {
         if (GameManager.Instance != null) GameManager.Instance.GameOver();
         ReloadScene();
     }
 
-    // Hồi sinh sau khi xem video: đầy máu, bất tử tạm thời, trả game về Playing
     public void Revive()
     {
         if (!isDead) return;
@@ -244,7 +271,6 @@ public class PlayerCollision : MonoBehaviour
         if (GameManager.Instance != null) GameManager.Instance.Revive();
     }
 
-    // Dịch lên từng bước cho tới khi chỗ đó không chạm KillZone và không kẹt trong Ground/Wall
     private Vector3 FindSafeRevivePosition(Vector3 start)
     {
         for (int i = 0; i <= reviveSearchSteps; i++)
@@ -262,7 +288,6 @@ public class PlayerCollision : MonoBehaviour
         int mask = reviveBlockLayers.value | LayerMask.GetMask("Ground", "Wall");
         if (Physics2D.OverlapCircle(position, checkRadius, mask) != null) return true;
 
-        // OverlapCircleAll gồm cả trigger (KillZone là trigger)
         Collider2D[] hits = Physics2D.OverlapCircleAll(position, checkRadius);
         foreach (Collider2D hit in hits)
         {

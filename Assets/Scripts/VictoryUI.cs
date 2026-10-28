@@ -2,7 +2,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Gắn vào 1 object luôn active (vd. Canvas); `panel` là object con bị ẩn mặc định
 public class VictoryUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -33,7 +32,6 @@ public class VictoryUI : MonoBehaviour
     {
         if (panel != null)
         {
-            // Vẽ panel đè lên HUD và làm nền gần đặc để chỉ còn thấy nội dung Victory
             panel.transform.SetAsLastSibling();
             Image background = panel.GetComponent<Image>();
             if (background != null)
@@ -49,7 +47,6 @@ public class VictoryUI : MonoBehaviour
         ScoreManager score = ScoreManager.Instance;
         if (scoreText != null && score != null && RunManager.Instance != null)
         {
-            // Phá đảo 4 ải: Fruit Coins toàn trận đã được nhân đôi và cộng vào ví
             scoreText.text = "Score: " + score.TotalScore + "\nFruit Coins: +" + RunManager.Instance.LastRunReward + " (x2)";
         }
 
@@ -68,7 +65,6 @@ public class VictoryUI : MonoBehaviour
     {
         if (panel != null) panel.SetActive(false);
 
-        // Chuẩn bị sẵn run mới (đưa player về điểm xuất phát) rồi dừng ở menu; MainMenuUI tự hiện khi state = Menu
         if (RunManager.Instance != null) RunManager.Instance.PrepareNewRun();
         if (GameManager.Instance != null) GameManager.Instance.GoToMenu();
     }

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Sprite vẽ bằng code (không cần art): hình tròn và mũi tên chỉ xuống
 public static class TutorialSprites
 {
     private const int Size = 64;
@@ -14,7 +13,6 @@ public static class TutorialSprites
         return Mathf.Clamp01(Size / 2f - d);
     }));
 
-    // Đầu mũi tên ở đáy ảnh (y = 0), thân ở phía trên
     public static Sprite ArrowDown => arrowDown != null ? arrowDown : (arrowDown = Build((x, y) =>
     {
         float half = y < Size / 2 ? y * 0.97f : 8f;
@@ -39,8 +37,6 @@ public static class TutorialSprites
     }
 }
 
-// Hình minh họa động trong bảng gợi ý Tutorial (vẽ bằng Image, tự dựng lúc chạy): kéo-thả để bay, Ground Slam, giẫm quái.
-// Dùng thời gian thật để vẫn mượt khi game slow-mo lúc ngắm. Gắn vào 1 con của hint panel (khung ~180x180).
 public class TutorialDemoUI : MonoBehaviour
 {
     private enum Mode { None, Drag, Slam, Stomp }
@@ -53,7 +49,6 @@ public class TutorialDemoUI : MonoBehaviour
     private bool built;
     private Image ground, enemy, player, hand, band, arrow;
 
-    // Trả true nếu có minh họa cho action này (hiện khung), false thì ẩn khung
     public bool Show(TutorialAction action)
     {
         Build();
@@ -117,7 +112,6 @@ public class TutorialDemoUI : MonoBehaviour
         }
     }
 
-    // Nhấn giữ, kéo NGƯỢC hướng muốn bay (mũi tên vàng chỉ hướng bay), thả → bay
     private void AnimateDrag()
     {
         float k = Time.unscaledTime % 2.6f;
@@ -147,7 +141,6 @@ public class TutorialDemoUI : MonoBehaviour
         player.rectTransform.anchoredPosition = playerPos;
     }
 
-    // Mũi tên chỉ xuống, player lao thẳng xuống nền
     private void AnimateSlam()
     {
         float k = Time.unscaledTime % 1.6f;
@@ -165,7 +158,6 @@ public class TutorialDemoUI : MonoBehaviour
         arrow.color = new Color(ArrowColor.r, ArrowColor.g, ArrowColor.b, 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 8f));
     }
 
-    // Rơi xuống ĐẦU quái → quái biến mất, player bật lên (được thêm lượt nhảy)
     private void AnimateStomp()
     {
         float k = Time.unscaledTime % 2.4f;
@@ -216,7 +208,6 @@ public class TutorialDemoUI : MonoBehaviour
         rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
     }
 
-    // Sprite mũi tên chỉ xuống (-Y): xoay +90° để đầu mũi tên hướng theo dir
     private void SetArrow(Vector2 from, Vector2 dir, float length)
     {
         RectTransform rt = arrow.rectTransform;

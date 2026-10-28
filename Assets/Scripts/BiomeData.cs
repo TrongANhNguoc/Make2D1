@@ -13,7 +13,6 @@ public class BiomeData : ScriptableObject
 
     public int StageCount => levels != null ? levels.Length : 0;
 
-    // index 0-based; trả về null nếu ngoài phạm vi
     public LevelConfig GetLevel(int index)
     {
         if (levels == null || index < 0 || index >= levels.Length) return null;

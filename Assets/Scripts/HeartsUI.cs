@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Hiển thị máu bằng trái tim: mất 1 máu thì mất 1 trái tim.
-// Gắn vào 1 container (nên có HorizontalLayoutGroup). `heartTemplate` là Image trái tim mẫu (con của container, sẽ bị ẩn).
 public class HeartsUI : MonoBehaviour
 {
     [SerializeField] private Image heartTemplate;

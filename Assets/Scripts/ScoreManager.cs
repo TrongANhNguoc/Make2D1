@@ -20,8 +20,8 @@ public class ScoreManager : MonoBehaviour
 
     private float startY;
     private float maxHeight;
-    private int bankedHeightScore; // điểm độ cao của các ải đã qua
-    private int actionScore;   // điểm ăn quả / diệt quái đã nhân combo
+    private int bankedHeightScore;
+    private int actionScore;
     private int comboJumps;
 
     public int ActionScore => actionScore;
@@ -80,7 +80,6 @@ public class ScoreManager : MonoBehaviour
         OnComboChanged?.Invoke(comboJumps, ComboMultiplier);
     }
 
-    // Sang ải mới: chốt điểm độ cao ải cũ rồi đo độ cao lại từ điểm xuất phát mới
     public void BeginStage(float newStartY)
     {
         bankedHeightScore = HeightScore;
@@ -89,21 +88,18 @@ public class ScoreManager : MonoBehaviour
         OnScoreChanged?.Invoke(TotalScore);
     }
 
-    // Gọi khi ăn quả / diệt quái: điểm cơ bản được nhân với hệ số combo hiện tại
     public void AddPoints(int basePoints)
     {
         actionScore += Mathf.RoundToInt(basePoints * ComboMultiplier);
         OnScoreChanged?.Invoke(TotalScore);
     }
 
-    // Gọi mỗi lần bắn/nhảy khi đang ở trên không
     public void RegisterJump()
     {
         comboJumps++;
         OnComboChanged?.Invoke(comboJumps, ComboMultiplier);
     }
 
-    // Gọi khi chạm đất
     public void ResetCombo()
     {
         if (comboJumps == 0) return;
@@ -111,7 +107,6 @@ public class ScoreManager : MonoBehaviour
         OnComboChanged?.Invoke(comboJumps, ComboMultiplier);
     }
 
-    // <5 lần: x1.0; 5 lần: x1.5; tăng đều đến 10 lần: x2.0; trên 10 vẫn x2.0
     private float GetComboMultiplier(int jumps)
     {
         if (jumps < comboStartJumps) return 1f;

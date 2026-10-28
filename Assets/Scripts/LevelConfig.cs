@@ -2,13 +2,12 @@ using UnityEngine;
 
 public enum StageType
 {
-    SpeedRush,  // Ải 1: chạy đua thời gian ăn quả
-    Survival,   // Ải 2: né bẫy và chướng ngại vật di động
-    Hybrid,     // Ải 3: 50% thu thập quả + 50% né bẫy
-    Boss        // Ải 4: như Hybrid + boss tung skill
+    SpeedRush,
+    Survival,
+    Hybrid,
+    Boss
 }
 
-// Bẫy đặt ở vị trí cố định trong ải (vd. đá lăn xuống)
 [System.Serializable]
 public struct FixedTrapSpawn
 {

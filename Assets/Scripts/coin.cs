@@ -11,7 +11,6 @@ public class coin : MonoBehaviour
 
     public FruitType Type => fruitType;
 
-    // Bắn khi Player ăn quả — TutorialManager lắng nghe (static: quả là prefab sinh động, không có reference sẵn)
     public static event Action<FruitType> OnCollected;
 
     private void OnTriggerEnter2D(Collider2D collision)

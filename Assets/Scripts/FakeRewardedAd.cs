@@ -3,9 +3,6 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
-// Video quảng cáo giả để test luồng hồi sinh: hiện panel trắng + đếm ngược, hết giờ thì coi như xem xong.
-// Dùng thời gian unscaled vì lúc này timeScale = 0. Gắn vào object luôn active (vd. cùng object với DeathUI);
-// `videoPanel` là object con bị ẩn mặc định.
 public class FakeRewardedAd : MonoBehaviour, IRewardedAd
 {
     [SerializeField] private GameObject videoPanel;

@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// Boss ải 4: bám góc trên màn hình, tung skill liên tục. Boss không bị tiêu diệt, ải kết thúc ở Portal.
-// Prefab chỉ cần sprite + script này; `projectilePrefab` là prefab có Projectile.
 public class BossController : MonoBehaviour
 {
     [Header("Position")]
@@ -52,7 +50,6 @@ public class BossController : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, target, followSmooth * Time.deltaTime);
     }
 
-    // Luân phiên 2 skill
     private void CastNextSkill()
     {
         if (projectilePrefab == null) return;
@@ -82,7 +79,6 @@ public class BossController : MonoBehaviour
         }
     }
 
-    // Đạn rơi thẳng xuống từ mép trên màn hình, rải đều theo chiều ngang
     private void RainSkill()
     {
         float topY = cam.ViewportToWorldPoint(new Vector3(0f, 1f, -cam.transform.position.z)).y + 1f;
